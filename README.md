@@ -16,7 +16,7 @@ A React-based single-page application for extracting and managing color palettes
 - **Palette Management**: Rename palettes, delete individual swatches, duplicate palettes (auto-increment names), export as JSON
 - **Theme Toggle**: Light and dark mode support
 - **Color Palettes**: Browse, select, delete, reorder (move to top/bottom or step up/down), and duplicate stored palettes
-- **Metadata**: JSONL persistence; region boundaries and cluster markers stored per image
+- **Metadata**: JSONL persistence to `image_metadata.jsonl`; each image record includes: image info (`createdDateTime`, `uploadedURL`, `uploadedFilePath`, `cachedFilePath`, `width`, `height`, `format`, `fileSizeBytes`), palette (`colorPalette` hex array, `paletteName`), and regions (`regions` as polygon arrays `[[x,y], ...]`, `clusterMarkers` as `{ hex, regionColor, x, y }` per region)
 
 ### Key Actions
 
@@ -141,20 +141,6 @@ Tests cover:
 - React components (Header, PaletteDisplay, ImageLibrary, MetadataDisplay)
 
 Run `npm run test:coverage` to generate a coverage report saved to a timestamped file (e.g. `coverage-report-2025-02-13T15-30-00.html`) in the client directory. Run `npm run build:with-coverage` to build and then generate the coverage report (does not start the server).
-
-## Future Improvements
-
-From code review; ordered by priority.
-
-**CI/CD**: Add `.github/workflows/ci.yml` (lint, test, build); `.env.example`; `Dockerfile`; `docker-compose.yml` for Python region-detection dependency.
-
-**Testing**: Extract and test ImageViewer pure functions (`polygonCentroid`, `shrinkPolygon`, `polygonToPath`); add server-side tests (Express routes, image_processor, metadata_handler); consider integration/E2E tests.
-
-**Architecture**: Refactor App.jsx (useReducer or context) to reduce useState and prop-drilling; reduce PaletteDisplay props (17).
-
-**Server / code quality**: Remove dead code in image_processor.js; DRY filename validation (middleware or `validateFilename()`); review metadata_handler race condition on concurrent read/rewrite.
-
-**Documentation**: Add deployment section (Docker, env vars); document metadata_handler concurrency in code.
 
 ## Project Structure
 
