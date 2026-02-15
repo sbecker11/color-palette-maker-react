@@ -8,9 +8,12 @@ A React-based single-page application for extracting and managing color palettes
 
 ## Features
 
+### Key Features
+
+- **Region detection**: Python/OpenCV subprocess; adaptive thresholding, Otsu, Canny edge detection, and LAB K-means color segmentation; outputs polygon regions for overlay and masked K-means when regions exist.
+- **Palette extraction**: K-means clustering with configurable K (5, 7, 9); luminance-based filtering; CIEDE2000 perceptual distance (color-diff) for nearest-cluster matching; masked by regions when present.
+
 - **Image Sources**: Upload images from URL or local file
-- **Automatic Palette Extraction**: K-means clustering with configurable K (5, 7, 9); luminance-based filtering; CIEDE2000 perceptual color distance (color-diff)
-- **Region Detection**: Python/OpenCV subprocess for adaptive thresholding, Otsu, Canny edge detection, and color-based segmentation; polygon overlays; masked K-means when regions exist
 - **Region Overlay**: SVG overlay with region polygons, centroid markers, region average hex and nearest cluster swatch hex; dual-layer text for visibility on light/dark backgrounds
 - **Color Sampling**: Crosshair mode — rollover to preview in empty swatch, double-click to add; click swatch to cancel
 - **Palette Management**: Rename palettes, delete individual swatches, duplicate palettes (auto-increment names), export as JSON
