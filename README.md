@@ -4,20 +4,23 @@
   <img src="media/gold.png" width="67%" alt="gold" />
 </a>
 
-A React-based single-page application for extracting and managing color palettes from images. Upload images via URL or file, extract dominant colors using K-means clustering, and export palettes as JSON.
+A React-based single-page application for extracting and managing color palettes from images. Upload images via URL or file; use automated region detection and manual region editing to control which portions of the image are used to compute palette swatches by K-means; extract dominant colors and export palettes as JSON.
 
 ## Features
 
 - **Image Sources**: Upload images from URL or local file
-- **Automatic Palette Extraction**: K-means clustering extracts up to 5 dominant colors
-- **Color Sampling**: Click the empty palette swatch to enter sampling mode (crosshair pointer). Rollover the image to preview the color in the empty swatch; double-click to add it to the palette. Click the swatch again to cancel.
-- **Palette Management**: Rename palettes, delete individual swatches, duplicate palettes, export as JSON
+- **Automatic Palette Extraction**: K-means clustering with configurable K (5, 7, 9); luminance-based filtering; CIEDE2000 perceptual color distance (color-diff)
+- **Region Detection**: Python/OpenCV subprocess for adaptive thresholding, Otsu, Canny edge detection, and color-based segmentation; polygon overlays; masked K-means when regions exist
+- **Region Overlay**: SVG overlay with region polygons, centroid markers, region average hex and nearest cluster swatch hex; dual-layer text for visibility on light/dark backgrounds
+- **Color Sampling**: Crosshair mode — rollover to preview in empty swatch, double-click to add; click swatch to cancel
+- **Palette Management**: Rename palettes, delete individual swatches, duplicate palettes (auto-increment names), export as JSON
 - **Theme Toggle**: Light and dark mode support
-- **Color Palettes**: Browse, select, delete, reorder, and duplicate stored palettes
+- **Color Palettes**: Browse, select, delete, reorder (move to top/bottom or step up/down), and duplicate stored palettes
+- **Metadata**: JSONL persistence; region boundaries and cluster markers stored per image
 
 ### Key Actions
 
-- **Reorder (⏫ ⏬ ▲ ▼)**: Use the left column (⏫ move to top, ⏬ move to bottom) or the inner column (▲ move up one, ▼ move down one) next to each item in the Color Palettes list to change the display order. Order is persisted to the server.
+- **Reorder (⏫ ⏬ ⬆️ ⬇️)**: Use the left column (⏫ move to top, ⏬ move to bottom) or the inner column (⬆️ move up one, ⬇️ move down one) next to each item in the Color Palettes list. Order is persisted to the server.
 - **Palette Name**: Edit the name in the "Palette Name" input and click away (blur) to save. The name is persisted automatically.
 - **Regenerate (K-means)**: Replace the current palette colors with a freshly computed set from the image using K-means clustering (K=5, 7, or 9).
 - **Detect Regions**: Uses a Python subprocess (OpenCV) to detect large regions in the image. Regions are displayed as overlays; use K-means to extract colors only from masked regions.
@@ -29,34 +32,28 @@ A React-based single-page application for extracting and managing color palettes
 
 - **Frontend**: React 19, Vite 7
 - **Backend**: Node.js, Express
-- **Image Processing**: Sharp, node-kmeans, get-pixels
+- **Image Processing**: Sharp, node-kmeans, get-pixels, color-diff (CIEDE2000)
+- **Region Detection**: Python 3, OpenCV (opencv-python), NumPy
 - **Testing**: Vitest, React Testing Library, happy-dom
 
 ## Prerequisites
 
 - Node.js 18+ (20.19+ or 22.12+ recommended for Vite 7)
 - npm
-- **For Region Detection**: Python 3 with OpenCV and NumPy (`python3 -m pip install -r requirements.txt`). The server auto-detects a venv when `VIRTUAL_ENV` is set or when `./venv` exists. Override with `DETECT_REGIONS_PYTHON=/path/to/python`.
+- Python 3 with opencv-python and numpy — required for the **Detect Regions** feature. The app runs without Python, but region detection will fail until the venv is created and dependencies are installed. Use a virtual environment (recommended) or system Python. Override with `DETECT_REGIONS_PYTHON=/path/to/python` if needed.
 
 ## Installation
 
+Complete all steps below before running the app. The Python setup is a one-time prerequisite for region detection.
+
 ```bash
-# Install root dependencies (backend + dev tools)
+# 1. Install root dependencies (backend + dev tools)
 npm install
 
-# Install client dependencies (React app)
+# 2. Install client dependencies (React app)
 cd client && npm install && cd ..
-```
 
-### Optional: Region Detection (Python)
-
-To use the "Detect Regions" feature, install Python 3 and its dependencies:
-
-```bash
-# Option A: System Python
-python3 -m pip install -r requirements.txt
-
-# Option B: Virtual environment (recommended)
+# 3. Create venv and install Python dependencies (opencv-python, numpy) for region detection
 python3 -m venv venv
 source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
@@ -66,7 +63,7 @@ With a venv, start the server with it activated (`source venv/bin/activate` befo
 
 ## Development
 
-Run both the backend server and React dev server:
+Activate the venv first if you need region detection (`source venv/bin/activate`). Run both the backend server and React dev server:
 
 ```bash
 npm run dev
@@ -76,7 +73,7 @@ This starts:
 - **Backend**: http://localhost:3000 (Express API)
 - **Frontend**: http://localhost:5173 (Vite dev server with hot reload)
 
-The Vite dev server proxies `/api`, `/upload`, and `/uploads` to the backend.
+The Vite dev server proxies `/api`, `/upload`, and `/uploads` to the backend. In development, the frontend runs on port 5173 and the API on 3000.
 
 To run them separately:
 
@@ -100,12 +97,20 @@ Or open Chrome in normal dev mode:
 
 ## Production Build
 
+Ensure you have completed [Installation](#installation) (including venv and Python packages) before building and starting. The commands below do **not** create the venv or install Python dependencies.
+
 ```bash
 # Build the React app
 npm run build
 
-# Start the server (serves built React app + API)
+# Start the server (serves built React app + API at localhost:3000)
 npm start
+```
+
+To build with coverage and then start:
+
+```bash
+npm run build:with-coverage; npm start
 ```
 
 Open Chrome in app mode:
@@ -118,7 +123,7 @@ Or open Chrome in normal dev mode:
     chrome http://localhost:3000
     open -a "Google Chrome" http://localhost:3000   # macOS
 
-The server will serve the React app from `client/dist` and the API at the same origin.
+The server will serve the React app from `client/dist` and the API at the same origin. In production, both the built app and the API are served from port 3000.
 
 ## Testing
 
@@ -135,11 +140,21 @@ Tests cover:
 - API client (request methods and payloads)
 - React components (Header, PaletteDisplay, ImageLibrary, MetadataDisplay)
 
-Run `npm run test:coverage` to generate a coverage report saved to a timestamped file (e.g. `coverage-report-2025-02-13T15-30-00.html`) in the client directory. Run `npm run build:with-coverage` to build and then generate the coverage report.
+Run `npm run test:coverage` to generate a coverage report saved to a timestamped file (e.g. `coverage-report-2025-02-13T15-30-00.html`) in the client directory. Run `npm run build:with-coverage` to build and then generate the coverage report (does not start the server).
 
-## Action Items
+## Future Improvements
 
-See [ACTIONS.md](ACTIONS.md) for improvement items from code review (CI/CD, testing, architecture, server quality).
+From code review; ordered by priority.
+
+**CI/CD**: Add `.github/workflows/ci.yml` (lint, test, build); `.env.example`; `Dockerfile`; `docker-compose.yml` for Python region-detection dependency.
+
+**Testing**: Extract and test ImageViewer pure functions (`polygonCentroid`, `shrinkPolygon`, `polygonToPath`); add server-side tests (Express routes, image_processor, metadata_handler); consider integration/E2E tests.
+
+**Architecture**: Refactor App.jsx (useReducer or context) to reduce useState and prop-drilling; reduce PaletteDisplay props (17).
+
+**Server / code quality**: Remove dead code in image_processor.js; DRY filename validation (middleware or `validateFilename()`); review metadata_handler race condition on concurrent read/rewrite.
+
+**Documentation**: Add deployment section (Docker, env vars); document metadata_handler concurrency in code.
 
 ## Project Structure
 
@@ -157,8 +172,9 @@ color-palette-maker-react/
 ├── server.js              # Express server
 ├── metadata_handler.js    # Image metadata (JSONL)
 ├── image_processor.js     # K-means palette generation
+├── scripts/detect_regions.py  # Python/OpenCV region detection
+├── requirements.txt       # Python deps (opencv-python, numpy)
 ├── uploads/               # Uploaded images
-├── ACTIONS.md             # Action items from code review
 └── package.json
 ```
 
@@ -201,7 +217,7 @@ When regions exist, an SVG overlay is drawn on top of the palette image. Each re
 K-means clustering uses the `node-kmeans` library. Two modes apply:
 
 - **a) Regions defined:** If regions exist, only pixels inside at least one region polygon are included in the K-means input. Opaque pixels are filtered by luminance (excluding near-black and near-white). The result is a palette of dominant colors from the masked image.
-- **b) No regions:** If no regions are defined, the entire image is used. Opaque pixels are filtered by luminance, then clustered. The palette size (K) is chosen via the Regenerate action (5, 7, or 9 colors).
+- **b) No regions:** If no regions are defined, then K-means is applied to all pixels in the image. Opaque pixels are filtered by luminance, then clustered. The palette size (K) is chosen via the Regenerate action (5, 7, or 9 colors).
 
 ### 6. How the most similar (nearest in color space) cluster swatch is computed for each region
 
