@@ -21,10 +21,10 @@
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node scripts/run-with-venv.js node server.js",
     "build": "cd client && npm run build",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "dev:server": "nodemon server.js",
+    "dev:server": "node scripts/run-with-venv.js nodemon server.js",
     "dev:client": "cd client && npm run dev",
     "test": "cd client && npm run test",
     "test:coverage": "cd client && npm run test:coverage",

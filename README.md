@@ -43,11 +43,11 @@ A React-based single-page application for extracting and managing color palettes
 
 - Node.js 18+ (20.19+ or 22.12+ recommended for Vite 7)
 - npm
-- Python 3 with opencv-python and numpy — required for the **Detect Regions** feature. The app runs without Python, but region detection will fail until the venv is created and dependencies are installed. Use a virtual environment (recommended) or system Python. Override with `DETECT_REGIONS_PYTHON=/path/to/python` if needed.
+- Python 3 with opencv-python and numpy — required for region detection (a core feature). Use a virtual environment (recommended) or system Python. Override with `DETECT_REGIONS_PYTHON=/path/to/python` if needed.
 
 ## Installation
 
-Complete all steps below before running the app. The Python setup is a one-time prerequisite for region detection.
+Complete all steps below before running the app. All three steps are required for full functionality, including region detection.
 
 ```bash
 # 1. Install root dependencies (backend + dev tools)
@@ -62,11 +62,11 @@ source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-With a venv, start the server with it activated (`source venv/bin/activate` before `npm start` or `npm run dev`), or the server will auto-detect `./venv` in the project root.
+The development and production build scripts first activate the Python venv (using `source venv/bin/activate` or equivalent) before starting the backend server, so region detection works in both environments. If you run the server manually, activate the venv first or the server will auto-detect `./venv` when present.
 
 ## Development
 
-Activate the venv first if you need region detection (`source venv/bin/activate`). Run both the backend server and React dev server:
+Run both the backend server and React dev server:
 
 ```bash
 npm run dev
@@ -100,7 +100,7 @@ Or open Chrome in normal dev mode:
 
 ## Production Build
 
-Ensure you have completed [Installation](#installation) (including venv and Python packages) before building and starting. The commands below do **not** create the venv or install Python dependencies.
+Ensure you have completed [Installation](#installation) (including venv and Python packages) before building and starting. The `npm start` script activates the venv before starting the server. The commands below do **not** create the venv or install Python dependencies.
 
 ```bash
 # Build the React app
@@ -147,7 +147,7 @@ Run `npm run test:coverage` to generate a coverage report saved to a timestamped
 
 ## Future Improvements
 
-- **CI/CD**: Add `.github/workflows/ci.yml` (lint, test, build); `.env.example`; `Dockerfile`; optionally `docker-compose.yml` for Python region-detection dependency.
+- **CI/CD**: Add `docker-compose.yml` for local dev with Python/OpenCV. (`.github/workflows/ci.yml`, `.env.example`, and `Dockerfile` are in place.)
 - **Testing**: Extract and test ImageViewer pure functions (`polygonCentroid`, `shrinkPolygon`, `polygonToPath`); add server-side tests (Express routes, image_processor, metadata_handler); consider integration/E2E tests.
 - **Architecture**: Refactor App.jsx (useReducer or context) to reduce useState and prop-drilling; reduce PaletteDisplay props.
 - **Server / code quality**: Remove dead code in image_processor.js; DRY filename validation (middleware or `validateFilename()`); review metadata_handler race condition on concurrent read/rewrite.

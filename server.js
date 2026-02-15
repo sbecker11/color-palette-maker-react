@@ -18,7 +18,7 @@ const port = 3000;
 // --- Configuration ---
 const uploadsDir = path.join(__dirname, 'uploads');
 
-// Resolve Python for region detection: DETECT_REGIONS_PYTHON > VIRTUAL_ENV > ./venv > python3
+// Resolve Python for region detection (required): DETECT_REGIONS_PYTHON > VIRTUAL_ENV > ./venv > python3
 function getRegionDetectionPython() {
     if (process.env.DETECT_REGIONS_PYTHON) {
         return process.env.DETECT_REGIONS_PYTHON;

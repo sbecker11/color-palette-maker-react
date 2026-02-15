@@ -430,7 +430,7 @@ function App() {
         showMessage(result.message || result.error || 'Region detection failed.', true);
       }
     } catch (err) {
-      showMessage('Region detection failed. Ensure Python 3 and opencv-python are installed.', true);
+      showMessage('Region detection failed. Region detection requires Python 3 with opencv-python and numpy. Ensure Installation (step 3) is complete.', true);
     } finally {
       setRegionsDetecting(false);
     }

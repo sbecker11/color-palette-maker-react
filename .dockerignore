@@ -1,0 +1,11 @@
+node_modules
+client/node_modules
+venv
+uploads
+.git
+.gitignore
+*.md
+.DS_Store
+client/coverage
+client/coverage-report-*.html
+image_metadata.jsonl
