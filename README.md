@@ -192,6 +192,9 @@ Run `npm run test:coverage` to generate a coverage report saved to a timestamped
 - **Architecture**: Refactor App.jsx (useReducer or context) to reduce useState and prop-drilling; reduce PaletteDisplay props.
 - **Server / code quality**: Remove dead code in image_processor.js; DRY filename validation (middleware or `validateFilename()`); review metadata_handler race condition on concurrent read/rewrite.
 - **Documentation**: Document metadata_handler concurrency in code.
+- **Media / repo size**: The `media/` directory includes a ~20MB `.mov` file tracked in git, which bloats clones. Consider moving to GitHub Releases, a CDN, or Git LFS.
+
+*Quick wins: ImageViewer function extraction, dead code cleanup. Larger investments: useReducer refactor, server-side tests.*
 
 ## Project Structure
 

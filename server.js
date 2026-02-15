@@ -13,7 +13,7 @@ const metadataHandler = require('./metadata_handler');
 const imageProcessor = require('./image_processor');
 
 const app = express();
-const port = 3000;
+const port = parseInt(process.env.PORT, 10) || 3000;
 
 // --- Configuration ---
 const uploadsDir = path.join(__dirname, 'uploads');
