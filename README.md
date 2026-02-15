@@ -128,6 +128,46 @@ Or open Chrome in normal dev mode:
 
 The server will serve the React app from `client/dist` and the API at the same origin. In production, both the built app and the API are served from port 3000.
 
+## Docker
+
+The Dockerfile includes Node.js, Python, and OpenCV so region detection works out of the box.
+
+### Local development
+
+Build and run with Docker:
+
+```bash
+docker build -t color-palette-maker .
+docker run -p 3000:3000 color-palette-maker
+```
+
+Open http://localhost:3000. The image serves the built React app and API. For hot-reload development, use `npm run dev` instead (see [Development](#development)).
+
+### Production deployment
+
+Build and push the image to your registry, then run it on your host or orchestration platform:
+
+```bash
+# Build
+docker build -t your-registry/color-palette-maker:latest .
+
+# Push (example)
+docker push your-registry/color-palette-maker:latest
+
+# Run on host
+docker run -d -p 3000:3000 --name color-palette-maker your-registry/color-palette-maker:latest
+```
+
+Use `-v` to persist `uploads/` across restarts:
+
+```bash
+docker run -d -p 3000:3000 \
+  -v $(pwd)/uploads:/app/uploads \
+  --name color-palette-maker your-registry/color-palette-maker:latest
+```
+
+Metadata is stored in `image_metadata.jsonl` inside the container; back it up or use a volume if you need persistence across image updates.
+
 ## Testing
 
 ```bash
@@ -151,7 +191,7 @@ Run `npm run test:coverage` to generate a coverage report saved to a timestamped
 - **Testing**: Extract and test ImageViewer pure functions (`polygonCentroid`, `shrinkPolygon`, `polygonToPath`); add server-side tests (Express routes, image_processor, metadata_handler); consider integration/E2E tests.
 - **Architecture**: Refactor App.jsx (useReducer or context) to reduce useState and prop-drilling; reduce PaletteDisplay props.
 - **Server / code quality**: Remove dead code in image_processor.js; DRY filename validation (middleware or `validateFilename()`); review metadata_handler race condition on concurrent read/rewrite.
-- **Documentation**: Add deployment section (Docker, env vars); document metadata_handler concurrency in code.
+- **Documentation**: Document metadata_handler concurrency in code.
 
 ## Project Structure
 
