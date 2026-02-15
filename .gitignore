@@ -9,6 +9,3 @@ client/coverage-report-*.html
 # Runtime / generated data
 image_metadata.jsonl
 uploads/
-media/*
-!media/gold.png
-!media/gold-blue.mov
