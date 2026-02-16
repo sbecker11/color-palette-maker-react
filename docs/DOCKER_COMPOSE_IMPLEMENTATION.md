@@ -25,6 +25,41 @@ This document outlines the concrete steps and file changes to split the app into
 
 ---
 
+## Pros and Cons
+
+### Pros
+
+- **Separation of concerns**: Python/OpenCV runs in its own container; backend stays Node-only. Easier to reason about dependencies and security.
+- **Independent scaling**: Can scale the image-processor service separately if region detection becomes a bottleneck.
+- **Proof of concept**: Demonstrates multi-service orchestration, shared networks, and volumes—useful for portfolios or architectural discussions.
+- **Reusability**: The image-processor HTTP API could be called by other services or tools.
+- **Technology isolation**: Python and Node dependencies stay in separate images; no single image with both runtimes.
+- **Clearer failure boundaries**: If the image-processor fails, the backend can handle errors and return a structured response.
+
+### Cons
+
+- **Increased complexity**: More containers, networking, and configuration. Harder to debug (logs across services).
+- **Network latency**: HTTP calls between backend and image-processor add a few milliseconds vs. in-process subprocess. Usually negligible for this workload.
+- **Operational overhead**: More services to build, deploy, monitor, and keep in sync.
+- **Shared storage**: Requires careful volume design so both backend and image-processor see the same files. Path mismatches can cause subtle bugs.
+- **Overkill for current scale**: The app processes one image at a time interactively. A single container with subprocess is simpler and sufficient for many use cases.
+- **Dual code paths**: Backend must support both HTTP (compose) and subprocess (local dev), or you accept different behavior in different environments.
+
+### When This Approach Makes Sense
+
+- Learning or demonstrating multi-service architecture.
+- Anticipating batch or higher-throughput region detection.
+- Running in an environment that already uses Docker Compose or orchestration.
+- Need to scale or version the image processor independently.
+
+### When to Stick with the Monolith
+
+- Low traffic and simple deployment needs.
+- Prioritizing simplicity and fast iteration.
+- Single developer or small team with limited DevOps experience.
+
+---
+
 ## Step 1: Create Python HTTP Service
 
 ### 1.1 New directory and files
