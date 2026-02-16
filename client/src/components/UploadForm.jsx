@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-function UploadForm({ onSubmit, message, onMessageClear }) {
+function UploadForm({ onSubmit, message }) {
   const [uploadType, setUploadType] = useState('url');
   const [imageUrl, setImageUrl] = useState('');
   const [imageFile, setImageFile] = useState(null);

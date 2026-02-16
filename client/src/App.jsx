@@ -95,7 +95,7 @@ function App() {
 
   useEffect(() => {
     loadImages();
-  }, []);
+  }, [loadImages]);
 
   // Update selected image when images change (e.g. after upload)
   useEffect(() => {
@@ -112,7 +112,7 @@ function App() {
         }
       }
     }
-  }, [images]);
+  }, [images, selectedMeta]);
 
   const handleSelectImage = useCallback((meta, imageUrl) => {
     setIsSamplingMode(false);
@@ -167,7 +167,7 @@ function App() {
           showMessage(result.message || 'An error occurred.', true);
           return result;
         }
-      } catch (error) {
+      } catch {
         showMessage('Submission failed. Check console.', true);
         return { success: false };
       }
@@ -188,7 +188,7 @@ function App() {
         } else {
           showMessage(result.message || 'Failed to reorder.', true);
         }
-      } catch (error) {
+      } catch {
         showMessage('Failed to reorder.', true);
       }
     },
@@ -196,7 +196,7 @@ function App() {
   );
 
   const handleDeleteImage = useCallback(
-    async (filename, listItemMeta) => {
+    async (filename) => {
       if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
       showMessage('Deleting...');
       try {
@@ -218,7 +218,7 @@ function App() {
         } else {
           showMessage(result.message || 'Error deleting image.', true);
         }
-      } catch (error) {
+      } catch {
         showMessage('Failed to delete image.', true);
       }
     },
@@ -242,7 +242,7 @@ function App() {
           if (!result.success) {
             showMessage(result.message || 'Error saving palette.', true);
           }
-        } catch (error) {
+        } catch {
           showMessage('Network error saving palette update.', true);
         }
       }
@@ -325,7 +325,7 @@ function App() {
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    const downloadFilenameBase = name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-]/g, '') || 'palette';
+    const downloadFilenameBase = name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '') || 'palette';
     link.download = `${downloadFilenameBase}.json`;
     link.href = url;
     link.style.display = 'none';
@@ -349,7 +349,7 @@ function App() {
       } else {
         showMessage(result.message || 'Failed to duplicate.', true);
       }
-    } catch (error) {
+    } catch {
       showMessage('Failed to duplicate.', true);
     }
   }, [showMessage, loadImages, handleSelectImage]);
@@ -357,7 +357,7 @@ function App() {
   const handleDelete = useCallback(() => {
     if (!selectedMeta) return;
     const filename = getFilenameFromMeta(selectedMeta);
-    if (filename) handleDeleteImage(filename, selectedMeta);
+    if (filename) handleDeleteImage(filename);
   }, [selectedMeta, handleDeleteImage]);
 
   const handleDuplicate = useCallback(() => {
@@ -429,7 +429,7 @@ function App() {
       } else {
         showMessage(result.message || result.error || 'Region detection failed.', true);
       }
-    } catch (err) {
+    } catch {
       showMessage('Region detection failed. Region detection requires Python 3 with opencv-python and numpy. Ensure Installation (step 3) is complete.', true);
     } finally {
       setRegionsDetecting(false);

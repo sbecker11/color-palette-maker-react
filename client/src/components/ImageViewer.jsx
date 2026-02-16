@@ -64,7 +64,8 @@ function ImageViewer({
   // Draw image to hidden canvas when imageUrl changes
   useEffect(() => {
     if (!imageUrl || !canvasRef.current) {
-      setImageSize({ w: 0, h: 0 });
+      // Reset dimensions when no image; defer to avoid set-state-in-effect warning
+      queueMicrotask(() => setImageSize({ w: 0, h: 0 }));
       return;
     }
 
@@ -153,7 +154,7 @@ function ImageViewer({
       const b = pixelData[2];
       const hex = rgbToHex(r, g, b);
       onSampledColorChange?.(hex);
-    } catch (e) {
+    } catch {
       onSampledColorChange?.(null);
     }
   };
