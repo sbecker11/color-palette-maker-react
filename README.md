@@ -168,6 +168,13 @@ docker run -d -p 3000:3000 \
 
 Metadata is stored in `image_metadata.jsonl` inside the container; back it up or use a volume if you need persistence across image updates.
 
+## Migration Guides
+
+The `docs/` directory contains implementation outlines for evolving the deployment architecture:
+
+- **[Single-User-SPA-DockerCompose-migration.md](docs/Single-User-SPA-DockerCompose-migration.md)** — Steps to split the app into separate frontend, backend, and image-processor services on Docker Compose. Useful for learning multi-service orchestration or preparing for scaling.
+- **[Multi-User-SaaS-Kubenetes-migration.md](docs/Multi-User-SaaS-Kubenetes-migration.md)** — Steps to migrate the single-user SPA to a multi-user SaaS on Kubernetes, including auth, PostgreSQL, object storage (S3/GCS), and stateless pods. For commercial or multi-tenant deployments.
+
 ## Testing
 
 ```bash
@@ -212,6 +219,7 @@ color-palette-maker-react/
 ├── server.js              # Express server
 ├── metadata_handler.js    # Image metadata (JSONL)
 ├── image_processor.js     # K-means palette generation
+├── docs/                  # Migration guides (Docker Compose, Kubernetes SaaS)
 ├── scripts/detect_regions.py  # Python/OpenCV region detection
 ├── requirements.txt       # Python deps (opencv-python, numpy)
 ├── uploads/               # Uploaded images
