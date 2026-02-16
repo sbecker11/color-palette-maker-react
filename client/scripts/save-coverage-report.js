@@ -19,5 +19,5 @@ if (fs.existsSync(sourceFile)) {
   console.log('Coverage report saved to:', path.basename(destFile));
 } else {
   console.error('Coverage report not found at', sourceFile);
-  process.exit(1);
+  globalThis.process.exit(1);
 }
