@@ -7,10 +7,11 @@ const path = require('path');
 const metadataFile = path.join(__dirname, 'image_metadata.jsonl');
 
 // --- Metadata Reading ---
-async function readMetadata() {
+async function readMetadata(overridePath) {
+    const targetFile = overridePath ?? metadataFile;
     console.log('[Metadata] Reading metadata file...'); // Added log
     try {
-        const data = await fs.readFile(metadataFile, 'utf8');
+        const data = await fs.readFile(targetFile, 'utf8');
         // Split by newline, filter empty lines, parse each JSON line
         const metadataArray = data.trim().split(os.EOL)
                                .filter(line => line.length > 0)
@@ -29,11 +30,12 @@ async function readMetadata() {
 }
 
 // --- Metadata Appending ---
-async function appendMetadata(metadataObject) {
+async function appendMetadata(metadataObject, overridePath) {
+    const targetFile = overridePath ?? metadataFile;
     console.log('[Metadata] Appending metadata record...', metadataObject); // Added log
     try {
         const jsonLine = JSON.stringify(metadataObject) + os.EOL;
-        await fs.appendFile(metadataFile, jsonLine, 'utf8');
+        await fs.appendFile(targetFile, jsonLine, 'utf8');
         console.log('[Metadata] Appended record successfully.'); // Added log
     } catch (error) {
         console.error("[Metadata] Error appending to metadata file:", error);
@@ -42,11 +44,12 @@ async function appendMetadata(metadataObject) {
 }
 
 // --- Metadata Rewriting ---
-async function rewriteMetadata(metadataArray) {
+async function rewriteMetadata(metadataArray, overridePath) {
+    const targetFile = overridePath ?? metadataFile;
     console.log(`[Metadata] Rewriting metadata file with ${metadataArray.length} records...`); // Added log
     try {
         const dataToWrite = metadataArray.map(obj => JSON.stringify(obj)).join(os.EOL) + (metadataArray.length > 0 ? os.EOL : '');
-        await fs.writeFile(metadataFile, dataToWrite, 'utf8');
+        await fs.writeFile(targetFile, dataToWrite, 'utf8');
         console.log('[Metadata] Rewrote file successfully.'); // Added log
     } catch (error) {
         console.error("[Metadata] Error rewriting metadata file:", error);

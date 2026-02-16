@@ -9,6 +9,8 @@ const {
   centroidsToPalette,
   calculateLuminance,
   minPairwiseColorDistance,
+  pointInPolygon,
+  pointInAnyRegion,
 } = require(path.resolve(__dirname, '../../image_processor.js'));
 
 // Centroids with luminance between 25 and 185 (passes filter)
@@ -133,5 +135,53 @@ describe('image_processor.minPairwiseColorDistance', () => {
     const d = minPairwiseColorDistance(centroids);
     expect(d).toBeGreaterThan(0);
     expect(d).toBeLessThan(100);
+  });
+});
+
+describe('image_processor.pointInPolygon', () => {
+  const square = [[0, 0], [10, 0], [10, 10], [0, 10]];
+
+  it('returns true for point inside polygon', () => {
+    expect(pointInPolygon(5, 5, square)).toBe(true);
+    expect(pointInPolygon(1, 1, square)).toBe(true);
+    expect(pointInPolygon(9, 9, square)).toBe(true);
+  });
+
+  it('returns false for point outside polygon', () => {
+    expect(pointInPolygon(-1, -1, square)).toBe(false);
+    expect(pointInPolygon(15, 15, square)).toBe(false);
+    expect(pointInPolygon(5, -5, square)).toBe(false);
+  });
+
+  it('handles triangle', () => {
+    const tri = [[0, 0], [10, 0], [5, 10]];
+    expect(pointInPolygon(5, 3, tri)).toBe(true);
+    expect(pointInPolygon(5, 11, tri)).toBe(false);
+    expect(pointInPolygon(-1, 5, tri)).toBe(false);
+  });
+});
+
+describe('image_processor.pointInAnyRegion', () => {
+  it('returns true when no regions (all points allowed)', () => {
+    expect(pointInAnyRegion(5, 5, null)).toBe(true);
+    expect(pointInAnyRegion(5, 5, [])).toBe(true);
+  });
+
+  it('returns true when point inside any region', () => {
+    const regions = [[[0, 0], [10, 0], [10, 10], [0, 10]]];
+    expect(pointInAnyRegion(5, 5, regions)).toBe(true);
+  });
+
+  it('returns false when point outside all regions', () => {
+    const regions = [[[0, 0], [10, 0], [10, 10], [0, 10]]];
+    expect(pointInAnyRegion(50, 50, regions)).toBe(false);
+  });
+
+  it('returns true when point inside second region', () => {
+    const regions = [
+      [[0, 0], [5, 0], [5, 5], [0, 5]],
+      [[20, 20], [30, 20], [30, 30], [20, 30]],
+    ];
+    expect(pointInAnyRegion(25, 25, regions)).toBe(true);
   });
 });

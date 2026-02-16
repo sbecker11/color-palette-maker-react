@@ -186,9 +186,9 @@ cd client && npm run test:watch
 ```
 
 Tests cover:
-- Utility functions (filename parsing, file size formatting, RGB to hex)
-- API client (request methods and payloads)
-- React components (Header, PaletteDisplay, ImageLibrary, MetadataDisplay)
+- **Client**: Utility functions (filename parsing, file size formatting, RGB to hex), API client, React components (Header, PaletteDisplay, ImageLibrary, MetadataDisplay, UploadForm, ImageViewer)
+- **Server modules** (run via Vitest in client): `metadata_handler` (read, append, rewrite with temp files), `image_processor` (centroidsToPalette, calculateLuminance, minPairwiseColorDistance, pointInPolygon, pointInAnyRegion)
+- **ImageViewer geometry**: Extracted pure functions `polygonCentroid`, `shrinkPolygon`, `polygonToPath` in `imageViewerGeometry.js`
 
 Run `npm run test:coverage` to generate a coverage report saved to a timestamped file (e.g. `coverage-report-2025-02-13T15-30-00.html`) in the client directory. Run `npm run build:with-coverage` to build and then generate the coverage report (does not start the server).
 
@@ -203,16 +203,33 @@ The repository includes a [GitHub Actions workflow](.github/workflows/ci.yml) th
 
 CI must pass before merging pull requests.
 
+### Recent CI/CD Improvements (Low-Effort)
+
+The following changes improve test coverage and confidence in CI without adding heavy infrastructure:
+
+| Change | Benefit |
+|--------|---------|
+| **metadata_handler tests** | Unit tests for `readMetadata`, `appendMetadata`, `rewriteMetadata` using temp files. Ensures JSONL parsing, ENOENT handling, and overwrite behavior work correctly. |
+| **image_processor tests** | Added tests for `pointInPolygon` and `pointInAnyRegion` (ray-casting, region masking). Prevents regressions in K-means region masking. |
+| **imageViewerGeometry module** | Extracted `polygonCentroid`, `shrinkPolygon`, `polygonToPath` from ImageViewer into `imageViewerGeometry.js`. Pure functions are unit-tested; SVG region overlays stay correct across refactors. |
+
+These tests run in the existing Vitest suite (`npm test`) and require no CI workflow changes.
+
 ## Future Improvements
 
 - **CI/CD**: Add `docker-compose.yml` for local dev with Python/OpenCV. (`.github/workflows/ci.yml`, `.env.example`, and `Dockerfile` are in place.)
-- **Testing**: Extract and test ImageViewer pure functions (`polygonCentroid`, `shrinkPolygon`, `polygonToPath`); add server-side tests (Express routes, image_processor, metadata_handler); consider integration/E2E tests.
+- **Testing (higher-effort)**:
+  - **Express route tests** (supertest): Mock handlers and test GET /api/images, POST /upload, palette/regions endpoints. Validates status codes, error handling, and filename validation (path traversal).
+  - **API integration tests**: Start the real server with a temp `uploads` dir; hit routes and assert persisted metadata. Catches integration bugs without full E2E.
+  - **E2E tests** (Playwright/Cypress): Upload image → generate palette → export JSON. Ensures critical user flows work end-to-end.
+  - **Coverage thresholds**: Add Vitest coverage thresholds (e.g. 80% statements); fail CI when coverage drops.
+  - **Docker build in CI**: Add `docker build` step to ensure the image builds on every commit.
 - **Architecture**: Refactor App.jsx (useReducer or context) to reduce useState and prop-drilling; reduce PaletteDisplay props.
 - **Server / code quality**: Remove dead code in image_processor.js; DRY filename validation (middleware or `validateFilename()`); review metadata_handler race condition on concurrent read/rewrite.
 - **Documentation**: Document metadata_handler concurrency in code.
 - **Media / repo size**: The `media/` directory includes a ~20MB `.mov` file tracked in git, which bloats clones. Consider moving to GitHub Releases, a CDN, or Git LFS.
 
-*Quick wins: ImageViewer function extraction, dead code cleanup. Larger investments: useReducer refactor, server-side tests.*
+*Quick wins: dead code cleanup. Larger investments: useReducer refactor, Express route tests, E2E tests.*
 
 ## Project Structure
 
@@ -223,6 +240,7 @@ color-palette-maker-react/
 │   │   ├── components/     # React components
 │   │   ├── api.js         # API client
 │   │   ├── utils.js       # Helper functions
+│   │   ├── imageViewerGeometry.js  # Polygon helpers (centroid, shrink, path)
 │   │   ├── App.jsx
 │   │   └── main.jsx
 │   ├── vite.config.js

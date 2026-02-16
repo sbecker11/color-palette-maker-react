@@ -331,5 +331,7 @@ module.exports = {
     centroidsToPalette,
     calculateLuminance,
     minPairwiseColorDistance,
+    pointInPolygon,
+    pointInAnyRegion,
     computeRegionColorMarkers
 };
