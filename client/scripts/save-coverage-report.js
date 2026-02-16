@@ -4,6 +4,7 @@
  * Run after: vitest run --coverage
  */
 import fs from 'fs';
+import process from 'node:process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -19,5 +20,5 @@ if (fs.existsSync(sourceFile)) {
   console.log('Coverage report saved to:', path.basename(destFile));
 } else {
   console.error('Coverage report not found at', sourceFile);
-  globalThis.process.exit(1);
+  process.exit(1);
 }
