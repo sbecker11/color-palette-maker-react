@@ -24,7 +24,8 @@ jobs:
           cd client && npm install
 
       - name: Lint
-        run: cd client && npm run lint
+        working-directory: client
+        run: npx eslint . --config eslint.config.js
 
       - name: Test
         run: npm test
