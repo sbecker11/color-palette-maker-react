@@ -84,8 +84,8 @@ function App() {
         setImages([]);
         showMessage(data.message || 'Could not load images', true);
       }
-    } catch (error) {
-      console.error('Failed to load image list:', error);
+    } catch {
+      console.error('Failed to load image list.');
       setImages([]);
       showMessage('Error loading image list.', true);
     } finally {

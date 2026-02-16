@@ -192,6 +192,17 @@ Tests cover:
 
 Run `npm run test:coverage` to generate a coverage report saved to a timestamped file (e.g. `coverage-report-2025-02-13T15-30-00.html`) in the client directory. Run `npm run build:with-coverage` to build and then generate the coverage report (does not start the server).
 
+## Continuous Integration
+
+The repository includes a [GitHub Actions workflow](.github/workflows/ci.yml) that runs on every push and pull request to `master` or `main`. The workflow:
+
+1. **Install dependencies** — Root and client `npm install`
+2. **Lint** — `cd client && npm run lint` (ESLint)
+3. **Test** — `npm test`
+4. **Build** — `npm run build`
+
+CI must pass before merging pull requests.
+
 ## Future Improvements
 
 - **CI/CD**: Add `docker-compose.yml` for local dev with Python/OpenCV. (`.github/workflows/ci.yml`, `.env.example`, and `Dockerfile` are in place.)
