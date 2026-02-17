@@ -1,7 +1,7 @@
 # Color Palette Maker (React)
 
-<a href="https://github.com/sbecker11/color-palette-maker-react/releases/download/v1.0.0/gold-blue.gif">
-  <img src="https://github.com/sbecker11/color-palette-maker-react/releases/download/v1.0.0/gold.png" width="67%" alt="gold" />
+<a href="https://github.com/sbecker11/color-palette-maker-react/releases/download/v1.0.0/gold-blue-2.gif">
+  <img src="https://github.com/sbecker11/color-palette-maker-react/releases/download/v1.0.0/gold-2.gif" width="67%" alt="gold" />
 </a>
 
 A React + Node.js app for extracting and managing color palettes from images.
