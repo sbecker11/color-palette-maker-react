@@ -214,22 +214,24 @@ main {
 
 #imageViewerContainer {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
 #imageViewer {
   position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
   width: 100%;
-  max-width: 500px;
-  height: 500px;
   border: 1px solid var(--border-color);
   background-color: var(--viewer-bg);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  margin: 0 auto;
 }
 
 .image-viewer-content {
@@ -265,7 +267,8 @@ main {
 }
 
 .image-viewer-content img {
-  object-fit: cover;
+  object-fit: contain;
+  object-position: top center;
 }
 
 #imageViewer .placeholder {
@@ -361,11 +364,10 @@ input[type="file"] {
   #imageViewerContainer {
     width: 100%;
     max-width: none;
-    height: auto;
-    overflow-y: visible;
+    min-height: 300px;
   }
   #imageViewer {
-    height: 400px;
+    min-height: 300px;
   }
 }
 

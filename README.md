@@ -1,6 +1,6 @@
 # Color Palette Maker (React)
 
-<a href="media/gold-blue.mov">
+<a href="media/gold-blue.gif">
   <img src="media/gold.png" width="67%" alt="gold" />
 </a>
 
@@ -19,8 +19,10 @@ A React-based single-page application for extracting and managing color palettes
 - **Palette regions**: Separate from swatches. **Detect Regions** computes and displays them. Each region has a **region boundary** (polygon), a **region circle** at its geometric center, the average **region hex value** beneath the circle, and a numeric **region label** at center. Use **Remove Region (click)** to delete one, **Clear all Regions** to remove all.
 
 - **Image Sources**: Upload images from URL or local file
-- **Region Overlay**: SVG overlay with region boundaries, region circles, region hex values, and region labels; dual-layer text for visibility on light/dark backgrounds
-- **Manual swatch creation**: Click empty swatch circle → cursor `+` → double-click palette image to add color; click empty swatch to cancel
+- **Region Overlay**: SVG overlay with region boundaries, region circles, region hex values, and region labels; dual-layer text for visibility on light/dark backgrounds; 1px black shadow on circles; golden glow on highlighted swatches
+- **Match palette swatches**: Toggle to show palette swatch circles over each region on the image. When on, hovering a panel swatch highlights all matching overlays (and vice versa); hovering a region highlights the matching panel swatch and all regions sharing that swatch
+- **Image viewer**: Uses full available space; entire image visible (fit-to-container, top-aligned); region overlays scale with the image
+- **Manual swatch creation**: Turn on **Adding swatches** toggle or click the empty swatch circle → cursor `+` → double-click palette image to add color; turn off the toggle or click empty swatch to exit
 - **Palette Management**: Rename palettes, delete individual swatches, duplicate palettes (auto-increment names), export as JSON
 - **Theme Toggle**: Light and dark mode support
 - **Color Palettes**: Browse, select, delete, reorder (move to top/bottom or step up/down), and duplicate stored palettes
@@ -34,6 +36,8 @@ A React-based single-page application for extracting and managing color palettes
 - **Detect Regions**: Uses a Python subprocess (OpenCV) to detect large regions in the image. Regions are displayed as overlays; use K-means to extract colors only from masked regions.
 - **Remove Region (click)**: Enter delete mode so you can click individual region boundaries to remove them one at a time. Click outside the palette image to exit. Requires regions to exist.
 - **Clear all Regions**: Remove all detected regions at once.
+- **Adding swatches**: Toggle to enter or exit manual swatch creation mode (same as clicking the empty swatch circle). Cursor shows `+` while active; double-click the palette image to add a color. Turn off the toggle to exit.
+- **Match palette swatches**: When regions exist, toggle to show or hide palette swatch circles on the image overlay. When shown, swatch and region highlights sync: hover a panel swatch to highlight all overlays with that color; hover a region or overlay to highlight the matching panel swatch and all regions with the same swatch.
 - **Export**: Download the palette as a JSON file for use in external integrations (design tools, other apps, code). The exported format is `{ name, colors: [...] }`. Palette changes within the app are saved to the server automatically; Export is only for creating downloadable files.
 
 ## Tech Stack
@@ -232,7 +236,6 @@ These tests run in the existing Vitest suite (`npm test`) and require no CI work
 - **Architecture**: Refactor App.jsx (useReducer or context) to reduce useState and prop-drilling; reduce PaletteDisplay props.
 - **Server / code quality**: Remove dead code in image_processor.js; DRY filename validation (middleware or `validateFilename()`); review metadata_handler race condition on concurrent read/rewrite.
 - **Documentation**: Document metadata_handler concurrency in code.
-- **Media / repo size**: The `media/` directory includes a ~20MB `.mov` file tracked in git, which bloats clones. Consider moving to GitHub Releases, a CDN, or Git LFS.
 
 *Quick wins: dead code cleanup. Larger investments: useReducer refactor, Express route tests, E2E tests.*
 
@@ -292,7 +295,7 @@ For each region polygon, the app sums the RGB values of all opaque pixels whose 
 
 ### 4. How region boundaries and average hex color are displayed on the overlay
 
-When regions exist, an SVG overlay is drawn on top of the palette image. Each region polygon is rendered with a semi-transparent fill and stroke. For each region, an empty circle (white 1px stroke) is drawn at the polygon centroid, and the region’s average hex color is displayed underneath it. Text uses a dual-layer (black at base, white offset) for visibility on both light and dark backgrounds.
+When regions exist, an SVG overlay is drawn on top of the palette image. Each region polygon is rendered with a semi-transparent fill and stroke. For each region, an empty circle (white 1px stroke) is drawn at the polygon centroid, and the region’s average hex color is displayed underneath it. Region circles and swatch overlay circles have a 1px black shadow. Text uses a dual-layer (black at base, white offset) for visibility on both light and dark backgrounds. When **Match palette swatches** is on, each region also shows a filled swatch circle with the nearest palette color; highlighted swatches display a golden glow ring.
 
 ### 5. How K-means cluster swatches are computed
 
@@ -319,6 +322,18 @@ Regions and their associated data are persisted in `image_metadata.jsonl`. Each 
 ### 9. Nearest palette swatch mapping is computed on demand
 
 The nearest palette swatch (`hex` in each region's display data) is computed whenever you run Regenerate (K-means) or Detect Regions. It is stored in metadata at that moment. To refresh nearest swatch mappings after changing the palette or regions, run Regenerate (K-means 5, 7, or 9) again.
+
+### 10. Swatch–overlay highlight sync (one-to-many)
+
+One palette swatch in the panel may correspond to zero or more overlay swatches on the image (multiple regions can share the same nearest color). When **Match palette swatches** is on:
+
+- Hovering a panel swatch highlights all overlay swatches with that color.
+- Hovering a region (or its overlay swatch) highlights the matching panel swatch and all regions that share that swatch (boundaries, circles, overlays).
+- When **Match palette swatches** is off, region hover does not highlight panel swatches.
+
+### 11. Image viewer layout
+
+The image viewer container uses flex layout to occupy all remaining space between the left and middle panels. The palette image is displayed with `object-fit: contain` so the entire image is visible (no cropping); it is top-aligned within the container. Region overlays scale and align with the image.
 
 ## License
 

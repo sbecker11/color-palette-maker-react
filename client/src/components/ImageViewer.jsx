@@ -185,7 +185,7 @@ function ImageViewer({
               <svg
                 className="region-overlay"
                 viewBox={`0 0 ${imageSize.w} ${imageSize.h}`}
-                preserveAspectRatio="xMidYMid slice"
+                preserveAspectRatio="xMidYMin meet"
                 style={{
                   pointerEvents: regions?.length > 0 || paletteRegion?.length > 0 ? 'auto' : 'none',
                   cursor: isDeleteRegionMode ? 'crosshair' : 'default',
