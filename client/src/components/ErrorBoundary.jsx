@@ -27,7 +27,7 @@ export default class ErrorBoundary extends Component {
         >
           <h2>Something went wrong</h2>
           <p>Please refresh the page to try again.</p>
-          {process.env.NODE_ENV === 'development' && this.state.error && (
+          {import.meta.env.DEV && this.state.error && (
             <pre style={{ textAlign: 'left', overflow: 'auto', maxHeight: '200px' }}>
               {this.state.error.toString()}
             </pre>

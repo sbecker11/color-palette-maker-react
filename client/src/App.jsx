@@ -11,7 +11,6 @@ import {
   applyPaletteToImages,
   computeSwatchLabels,
   applyPaletteNameToImages,
-  applyRegionsToImages,
   applyRegionsToMeta,
   computeRegionLabels,
   normalizeMetaPaletteRegion,
