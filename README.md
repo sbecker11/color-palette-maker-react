@@ -37,6 +37,7 @@ pip install -r requirements.txt
 
 | Doc | Description |
 |-----|-------------|
+| [Changelog](CHANGELOG.md) | Version history and release notes |
 | [User Guide](docs/USER_GUIDE.md) | Features, key actions, color sampling, region workflow |
 | [API Reference](docs/API.md) | REST endpoints, request/response formats |
 | [Architecture](docs/ARCHITECTURE.md) | Region & palette pipeline, data flow, storage format |
