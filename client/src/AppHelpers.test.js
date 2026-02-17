@@ -106,6 +106,10 @@ describe('AppHelpers', () => {
       expect(result.reordered[0]).toBe(images[1]);
       expect(result.reordered[1]).toBe(images[0]);
     });
+    it('returns null for invalid direction', () => {
+      expect(computeReorderedState(images, 1, 'left')).toBe(null);
+      expect(computeReorderedState(images, 1, '')).toBe(null);
+    });
   });
 
   describe('shouldSavePaletteName', () => {
@@ -243,6 +247,9 @@ describe('AppHelpers', () => {
         regions: [[0, 0], [1, 1]],
         regionLabels: ['00', '01'],
       });
+    });
+    it('returns null when meta is null', () => {
+      expect(applyRegionsToMeta(null, [[0, 0]])).toBe(null);
     });
   });
 

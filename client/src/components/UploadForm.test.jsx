@@ -116,6 +116,29 @@ describe('UploadForm', () => {
     expect(msgArea).toHaveClass('message-error');
   });
 
+  it('ignores submit when already submitting', async () => {
+    const onSubmit = vi.fn(() => new Promise((r) => setTimeout(r, 200)));
+    render(<UploadForm onSubmit={onSubmit} message={{ text: '', isError: false }} />);
+    fireEvent.change(screen.getByLabelText(/image url/i), {
+      target: { value: 'https://example.com/x.jpg' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+    const processingBtn = await screen.findByRole('button', { name: /processing/i });
+    fireEvent.click(processingBtn);
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles file input change with empty files', () => {
+    const onSubmit = vi.fn();
+    render(<UploadForm onSubmit={onSubmit} message={{ text: '', isError: false }} />);
+    fireEvent.click(screen.getByLabelText(/upload local file/i));
+    const fileInput = screen.getByLabelText(/select file/i);
+    fireEvent.change(fileInput, { target: { files: [new File([], 'x.png')] } });
+    fireEvent.change(fileInput, { target: { files: [] } });
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+    expect(onSubmit).toHaveBeenCalledWith({ success: false, message: 'Please select a file.' });
+  });
+
   it('shows Processing... on submit button when submitting', async () => {
     const onSubmit = vi.fn(() => new Promise((r) => setTimeout(r, 10)));
     render(<UploadForm onSubmit={onSubmit} message={{ text: '', isError: false }} />);

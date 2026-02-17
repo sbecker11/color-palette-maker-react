@@ -20,6 +20,9 @@ describe('App', () => {
         },
       ],
     });
+    api.generatePalette.mockResolvedValue({ success: true, palette: ['#ff0000'] });
+    api.upload.mockResolvedValue({ success: false });
+    api.savePalette.mockResolvedValue({ success: true });
   });
 
   it('renders Header with theme toggle', async () => {
@@ -236,5 +239,73 @@ describe('App', () => {
     const select = screen.getByRole('combobox', { name: 'Choose action' });
     fireEvent.change(select, { target: { value: 'export' } });
     expect(createObjectURL).toHaveBeenCalled();
+  });
+
+  it('calls detectRegions and updates state when Detect Regions succeeds', async () => {
+    api.detectRegions.mockResolvedValue({
+      success: true,
+      regions: [[[0, 0], [10, 0], [10, 10]]],
+      paletteRegion: [{ x: 5, y: 5, hex: '#ff0000', regionColor: '#ff0000' }],
+    });
+    api.saveMetadata.mockResolvedValue({ success: true });
+    render(<App />);
+    await waitFor(() => expect(api.getImages).toHaveBeenCalled());
+    const select = screen.getByRole('combobox', { name: 'Choose action' });
+    fireEvent.change(select, { target: { value: 'detectRegions' } });
+    await waitFor(() => expect(api.detectRegions).toHaveBeenCalledWith('img-1.jpeg'));
+    await waitFor(() =>
+      expect(screen.getByText(/detected \d+ region/i)).toBeInTheDocument()
+    );
+  });
+
+  it('calls deleteRegions and saveMetadata when Clear all Regions succeeds', async () => {
+    api.getImages.mockResolvedValue({
+      success: true,
+      images: [{
+        cachedFilePath: '/uploads/img-1.jpeg',
+        paletteName: 'img-1',
+        colorPalette: ['#ff0000'],
+        regions: [[[0, 0], [10, 0], [10, 10]]],
+      }],
+    });
+    api.saveMetadata.mockResolvedValue({ success: true });
+    render(<App />);
+    await waitFor(() => expect(api.getImages).toHaveBeenCalled());
+    const select = screen.getByRole('combobox', { name: 'Choose action' });
+    fireEvent.change(select, { target: { value: 'deleteRegions' } });
+    await waitFor(() => expect(api.saveMetadata).toHaveBeenCalledWith('img-1.jpeg', expect.objectContaining({ regions: [] })));
+    await waitFor(() => expect(screen.getByText(/regions cleared/i)).toBeInTheDocument());
+  });
+
+  it('calls duplicateImage when Duplicate is selected', async () => {
+    api.duplicateImage.mockResolvedValue({
+      success: true,
+      filename: 'img-dup.jpeg',
+      metadata: { cachedFilePath: '/uploads/img-dup.jpeg', paletteName: 'img-1-copy-1' },
+    });
+    render(<App />);
+    await waitFor(() => expect(api.getImages).toHaveBeenCalled());
+    const select = screen.getByRole('combobox', { name: 'Choose action' });
+    fireEvent.change(select, { target: { value: 'duplicate' } });
+    await waitFor(() => expect(api.duplicateImage).toHaveBeenCalledWith('img-1.jpeg'));
+  });
+
+  it('calls enterDeleteRegionMode when Remove Region (click) is selected', async () => {
+    api.getImages.mockResolvedValue({
+      success: true,
+      images: [{
+        cachedFilePath: '/uploads/img-1.jpeg',
+        paletteName: 'img-1',
+        colorPalette: ['#ff0000'],
+        regions: [[[0, 0], [10, 0], [10, 10]]],
+      }],
+    });
+    render(<App />);
+    await waitFor(() => expect(api.getImages).toHaveBeenCalled());
+    const select = screen.getByRole('combobox', { name: 'Choose action' });
+    fireEvent.change(select, { target: { value: 'enterDeleteRegionMode' } });
+    await waitFor(() =>
+      expect(screen.getByText(/click a region boundary to remove/i)).toBeInTheDocument()
+    );
   });
 });

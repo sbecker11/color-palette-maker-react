@@ -52,6 +52,11 @@ describe('imageViewerGeometry', () => {
       const shrunk = shrinkPolygon(square, 0);
       expect(shrunk).toEqual(square);
     });
+    it('handles vertex at centroid (hypot zero) using fallback scale', () => {
+      const line = [[0, 0], [10, 0]];
+      const shrunk = shrinkPolygon(line, 2);
+      expect(shrunk).toHaveLength(2);
+    });
   });
 
   describe('polygonToPath', () => {

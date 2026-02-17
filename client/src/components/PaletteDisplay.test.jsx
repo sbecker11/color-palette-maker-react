@@ -18,6 +18,12 @@ describe('PaletteDisplay', () => {
     onDuplicate: vi.fn(),
     onPaletteNameBlur: vi.fn(),
     selectedMeta: { paletteName: 'Test Palette' },
+    onDetectRegions: vi.fn(),
+    onDeleteRegions: vi.fn(),
+    onEnterDeleteRegionMode: vi.fn(),
+    regionsDetecting: false,
+    hasRegions: false,
+    onSwatchHover: vi.fn(),
   };
 
   it('renders Color Palette heading', () => {
@@ -187,5 +193,56 @@ describe('PaletteDisplay', () => {
   it('disables actions dropdown when no selectedMeta', () => {
     render(<PaletteDisplay {...defaultProps} selectedMeta={null} />);
     expect(screen.getByRole('combobox', { name: 'Choose action' })).toBeDisabled();
+  });
+
+  it('calls onDetectRegions when Detect Regions is selected', () => {
+    render(<PaletteDisplay {...defaultProps} />);
+    const select = screen.getByRole('combobox', { name: 'Choose action' });
+    fireEvent.change(select, { target: { value: 'detectRegions' } });
+    expect(defaultProps.onDetectRegions).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onDeleteRegions when Clear all Regions is selected', () => {
+    render(<PaletteDisplay {...defaultProps} hasRegions={true} />);
+    const select = screen.getByRole('combobox', { name: 'Choose action' });
+    fireEvent.change(select, { target: { value: 'deleteRegions' } });
+    expect(defaultProps.onDeleteRegions).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onEnterDeleteRegionMode when Remove Region (click) is selected', () => {
+    render(<PaletteDisplay {...defaultProps} hasRegions={true} />);
+    const select = screen.getByRole('combobox', { name: 'Choose action' });
+    fireEvent.change(select, { target: { value: 'enterDeleteRegionMode' } });
+    expect(defaultProps.onEnterDeleteRegionMode).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onRegenerateWithK(5) when K-means (5) is selected', () => {
+    render(<PaletteDisplay {...defaultProps} />);
+    const select = screen.getByRole('combobox', { name: 'Choose action' });
+    fireEvent.change(select, { target: { value: 'kmeans5' } });
+    expect(defaultProps.onRegenerateWithK).toHaveBeenCalledWith(5);
+  });
+
+  it('calls onRegenerateWithK(9) when K-means (9) is selected', () => {
+    render(<PaletteDisplay {...defaultProps} />);
+    const select = screen.getByRole('combobox', { name: 'Choose action' });
+    fireEvent.change(select, { target: { value: 'kmeans9' } });
+    expect(defaultProps.onRegenerateWithK).toHaveBeenCalledWith(9);
+  });
+
+  it('adds highlighted class to swatch when hovered', () => {
+    render(<PaletteDisplay {...defaultProps} hoveredSwatchIndex={0} />);
+    const swatch = document.querySelector('.palette-swatch.highlighted');
+    expect(swatch).toBeInTheDocument();
+  });
+
+  it('calls onSwatchHover on mouse enter and leave', () => {
+    const onSwatchHover = vi.fn();
+    render(<PaletteDisplay {...defaultProps} onSwatchHover={onSwatchHover} />);
+    const swatches = document.querySelectorAll('.palette-swatch');
+    fireEvent.mouseEnter(swatches[0]);
+    expect(onSwatchHover).toHaveBeenCalledWith(0);
+    fireEvent.mouseLeave(swatches[0]);
+    expect(onSwatchHover).toHaveBeenCalledWith(null);
   });
 });
