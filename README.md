@@ -1,6 +1,6 @@
 # Color Palette Maker (React)
 
-<a href="https://sbecker11.github.io/color-palette-maker-react/images/gold-blue-2.gif" alt="Gold-Blue" width="400">>
+<a href="https://sbecker11.github.io/color-palette-maker-react/images/gold-blue-2.gif" alt="Gold-Blue" width="400">
   <img src="https://sbecker11.github.io/color-palette-maker-react/images/gold-2.gif" alt="Gold palette demo" width="400" />
 </a>
 
