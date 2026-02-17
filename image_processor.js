@@ -227,6 +227,8 @@ function centroidsToPalette(centroidsRgb, options = {}) {
 
 /**
  * Polygon centroid.
+ * NOTE: This function is duplicated in client/src/imageViewerGeometry.js.
+ * Keep both implementations in sync if making changes.
  */
 function polygonCentroid(poly) {
     if (!poly || poly.length === 0) return [0, 0];
