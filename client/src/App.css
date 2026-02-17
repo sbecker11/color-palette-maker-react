@@ -212,6 +212,12 @@ main {
   cursor: not-allowed;
 }
 
+.library-action-btn {
+  margin-left: 5px;
+  font-size: 0.8em;
+  padding: 2px 5px;
+}
+
 #imageViewerContainer {
   flex: 1;
   min-width: 0;

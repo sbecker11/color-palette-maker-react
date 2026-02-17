@@ -4,6 +4,7 @@ import { shrinkPolygon, polygonToPath } from '../imageViewerGeometry';
 
 function ImageViewer({
   imageUrl,
+  imageAlt,
   isSamplingMode,
   onSampledColorChange,
   onDoubleClickAddColor,
@@ -168,8 +169,8 @@ function ImageViewer({
               ref={imgRef}
               id="displayedImage"
               src={imageUrl}
-              alt="Palette image"
-              title="Palette image"
+              alt={imageAlt || 'Palette image'}
+              title={imageAlt || 'Palette image'}
             />
             <div
               className="image-viewer-overlay"

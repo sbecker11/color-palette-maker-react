@@ -126,7 +126,7 @@ function ImageLibrary({
               </a>
               <button
                 type="button"
-                style={{ marginLeft: '5px', fontSize: '0.8em', padding: '2px 5px' }}
+                className="library-action-btn"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDuplicateImage?.(filename, meta);
@@ -136,7 +136,7 @@ function ImageLibrary({
               </button>
               <button
                 type="button"
-                style={{ marginLeft: '2px', fontSize: '0.8em', padding: '2px 5px' }}
+                className="library-action-btn"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDeleteImage?.(filename, meta);

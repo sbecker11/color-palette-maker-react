@@ -123,7 +123,8 @@ function App() {
 
   useEffect(() => {
     loadImages();
-  }, [loadImages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: load once on app init
+  }, []);
 
   // Update selected image when images change (e.g. after upload)
   useEffect(() => {
@@ -583,6 +584,7 @@ function App() {
         />
         <ImageViewer
           imageUrl={selectedImageUrl}
+          imageAlt={paletteName || (selectedMeta ? getFilenameWithoutExt(getFilenameFromMeta(selectedMeta)) : null)}
           isSamplingMode={isSamplingMode}
           onSampledColorChange={setCurrentSampledColor}
           onDoubleClickAddColor={handleDoubleClickAddColor}
