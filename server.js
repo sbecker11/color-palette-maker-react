@@ -15,6 +15,21 @@ const imageProcessor = require('./image_processor');
 const app = express();
 const port = parseInt(process.env.PORT, 10) || 3000;
 
+/** Computes swatch labels (A, B, C, ..., Z, AA, ...) for a palette. */
+function computeSwatchLabels(palette) {
+    if (!Array.isArray(palette)) return [];
+    return palette.map((_, i) => {
+        let s = '';
+        let n = i + 1;
+        while (n > 0) {
+            const r = (n - 1) % 26;
+            s = String.fromCharCode(65 + r) + s;
+            n = Math.floor((n - 1) / 26);
+        }
+        return s;
+    });
+}
+
 // --- Configuration ---
 const uploadsDir = path.join(__dirname, 'uploads');
 
@@ -266,8 +281,9 @@ app.post('/api/palette/:filename', express.json(), async (req, res) => {
             }
         }
 
-        // Update metadata array
+        // Update metadata array (swatchLabels: A, B, C, ...)
         allMetadata[imageIndex].colorPalette = extractedPalette;
+        allMetadata[imageIndex].swatchLabels = computeSwatchLabels(extractedPalette);
         allMetadata[imageIndex].clusterMarkers = clusterMarkers;
 
         // Rewrite metadata file
@@ -288,6 +304,7 @@ app.post('/api/palette/:filename', express.json(), async (req, res) => {
 app.put('/api/palette/:filename', express.json(), async (req, res) => { // Use express.json() middleware for this route
     const filename = req.params.filename;
     const updatedPalette = req.body.colorPalette;
+    const swatchLabels = req.body.swatchLabels;
     console.log(`[API PUT /palette] Request received for ${filename}`);
 
     if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
@@ -297,6 +314,9 @@ app.put('/api/palette/:filename', express.json(), async (req, res) => { // Use e
     if (!updatedPalette || !Array.isArray(updatedPalette) || !updatedPalette.every(c => /^#[0-9A-F]{6}$/i.test(c))) {
          return res.status(400).json({ success: false, message: 'Invalid palette data format.'});
     }
+    // Validate swatchLabels if provided
+    const validLabels = Array.isArray(swatchLabels) && swatchLabels.length === updatedPalette.length &&
+        swatchLabels.every(l => typeof l === 'string' && l.length > 0);
 
     let allMetadata;
     try {
@@ -313,8 +333,9 @@ app.put('/api/palette/:filename', express.json(), async (req, res) => { // Use e
     }
 
     console.log(`[API PUT /palette] Updating palette for ${filename} with ${updatedPalette.length} colors.`);
-    // Update the palette in the metadata array
+    // Update the palette and swatchLabels in the metadata array
     allMetadata[imageIndex].colorPalette = updatedPalette;
+    allMetadata[imageIndex].swatchLabels = validLabels ? swatchLabels : computeSwatchLabels(updatedPalette);
 
     // Rewrite the metadata file
     try {
@@ -497,7 +518,11 @@ app.post('/api/images/:filename/duplicate', async (req, res) => {
         }
         const newPaletteName = originalName + '-copy-' + (maxCopyNum + 1);
 
-        // 3. Create new metadata record (copy palette, regions, and image info)
+        // 3. Create new metadata record (copy palette, swatchLabels, regions, and image info)
+        const palette = Array.isArray(sourceMeta.colorPalette) ? [...sourceMeta.colorPalette] : [];
+        const labels = Array.isArray(sourceMeta.swatchLabels) && sourceMeta.swatchLabels.length === palette.length
+            ? [...sourceMeta.swatchLabels]
+            : computeSwatchLabels(palette);
         const newRecord = {
             createdDateTime: new Date().toISOString(),
             uploadedURL: null,
@@ -507,7 +532,8 @@ app.post('/api/images/:filename/duplicate', async (req, res) => {
             height: sourceMeta.height,
             format: sourceMeta.format,
             fileSizeBytes: newFileStat.size,
-            colorPalette: Array.isArray(sourceMeta.colorPalette) ? [...sourceMeta.colorPalette] : [],
+            colorPalette: palette,
+            swatchLabels: labels,
             paletteName: newPaletteName,
             regions: Array.isArray(sourceMeta.regions) ? JSON.parse(JSON.stringify(sourceMeta.regions)) : [],
             clusterMarkers: Array.isArray(sourceMeta.clusterMarkers) ? JSON.parse(JSON.stringify(sourceMeta.clusterMarkers)) : []

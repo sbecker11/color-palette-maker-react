@@ -67,6 +67,21 @@ describe('api', () => {
     );
   });
 
+  it('savePalette includes swatchLabels when provided', async () => {
+    global.fetch.mockResolvedValueOnce({
+      json: () => Promise.resolve({ success: true }),
+    });
+
+    await api.savePalette('img-123.jpeg', ['#ff0000', '#00ff00'], ['A', 'B']);
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/palette/img-123.jpeg',
+      expect.objectContaining({
+        body: JSON.stringify({ colorPalette: ['#ff0000', '#00ff00'], swatchLabels: ['A', 'B'] }),
+      })
+    );
+  });
+
   it('deleteImage sends DELETE request', async () => {
     global.fetch.mockResolvedValueOnce({
       json: () => Promise.resolve({ success: true }),

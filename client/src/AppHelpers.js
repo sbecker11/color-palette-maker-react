@@ -85,20 +85,49 @@ export function buildExportData(selectedMeta, paletteName) {
 }
 
 /**
- * Returns meta with colorPalette updated.
+ * Converts palette index to capital letter label (0->A, 1->B, ..., 25->Z, 26->AA, ...).
+ * @param {number} i - Zero-based index
+ * @returns {string}
  */
-export function applyPaletteToMeta(meta, palette) {
-  if (!meta) return meta;
-  return { ...meta, colorPalette: palette };
+export function indexToLabel(i) {
+  if (typeof i !== 'number' || i < 0) return '';
+  let s = '';
+  let n = i + 1;
+  while (n > 0) {
+    const r = (n - 1) % 26;
+    s = String.fromCharCode(65 + r) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
 }
 
 /**
- * Returns images array with palette updated for the file matching filename.
+ * Computes swatch labels for a palette (A, B, C, ...).
+ * @param {string[]} palette - Array of hex colors
+ * @returns {string[]}
+ */
+export function computeSwatchLabels(palette) {
+  if (!Array.isArray(palette)) return [];
+  return palette.map((_, i) => indexToLabel(i));
+}
+
+/**
+ * Returns meta with colorPalette and swatchLabels updated.
+ */
+export function applyPaletteToMeta(meta, palette) {
+  if (!meta) return meta;
+  const swatchLabels = computeSwatchLabels(palette);
+  return { ...meta, colorPalette: palette, swatchLabels };
+}
+
+/**
+ * Returns images array with palette and swatchLabels updated for the file matching filename.
  */
 export function applyPaletteToImages(images, filename, palette) {
   if (!images) return [];
+  const swatchLabels = computeSwatchLabels(palette);
   return images.map((m) =>
-    getFilenameFromMeta(m) === filename ? { ...m, colorPalette: palette } : m
+    getFilenameFromMeta(m) === filename ? { ...m, colorPalette: palette, swatchLabels } : m
   );
 }
 

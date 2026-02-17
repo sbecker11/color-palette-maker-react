@@ -8,6 +8,8 @@ import {
   applyPaletteToMeta,
   applyPaletteToImages,
   applyPaletteNameToImages,
+  indexToLabel,
+  computeSwatchLabels,
 } from './AppHelpers';
 
 describe('AppHelpers', () => {
@@ -153,12 +155,30 @@ describe('AppHelpers', () => {
     });
   });
 
+  describe('indexToLabel', () => {
+    it('returns A for 0', () => expect(indexToLabel(0)).toBe('A'));
+    it('returns B for 1', () => expect(indexToLabel(1)).toBe('B'));
+    it('returns Z for 25', () => expect(indexToLabel(25)).toBe('Z'));
+    it('returns AA for 26', () => expect(indexToLabel(26)).toBe('AA'));
+    it('returns empty for negative', () => expect(indexToLabel(-1)).toBe(''));
+  });
+
+  describe('computeSwatchLabels', () => {
+    it('returns A,B for two colors', () => {
+      expect(computeSwatchLabels(['#f00', '#0f0'])).toEqual(['A', 'B']);
+    });
+    it('returns empty for non-array', () => {
+      expect(computeSwatchLabels(null)).toEqual([]);
+    });
+  });
+
   describe('applyPaletteToMeta', () => {
-    it('returns meta with colorPalette updated', () => {
+    it('returns meta with colorPalette and swatchLabels updated', () => {
       const meta = { cachedFilePath: '/x.jpeg' };
       expect(applyPaletteToMeta(meta, ['#aaa'])).toEqual({
         cachedFilePath: '/x.jpeg',
         colorPalette: ['#aaa'],
+        swatchLabels: ['A'],
       });
     });
     it('returns meta unchanged when meta is null', () => {
@@ -170,14 +190,18 @@ describe('AppHelpers', () => {
     it('returns empty array when images is null', () => {
       expect(applyPaletteToImages(null, 'x.jpeg', ['#aaa'])).toEqual([]);
     });
-    it('updates only matching image', () => {
+    it('updates only matching image with palette and swatchLabels', () => {
       const images = [
         { cachedFilePath: '/a.jpeg' },
         { cachedFilePath: '/b.jpeg' },
       ];
       const result = applyPaletteToImages(images, 'b.jpeg', ['#ff0000']);
       expect(result[0]).toBe(images[0]);
-      expect(result[1]).toEqual({ cachedFilePath: '/b.jpeg', colorPalette: ['#ff0000'] });
+      expect(result[1]).toEqual({
+        cachedFilePath: '/b.jpeg',
+        colorPalette: ['#ff0000'],
+        swatchLabels: ['A'],
+      });
     });
   });
 

@@ -39,11 +39,15 @@ const api = {
     return response.json();
   },
 
-  async savePalette(filename, colorPalette) {
+  async savePalette(filename, colorPalette, swatchLabels) {
+    const body = { colorPalette };
+    if (Array.isArray(swatchLabels) && swatchLabels.length === colorPalette.length) {
+      body.swatchLabels = swatchLabels;
+    }
     const response = await fetch(`/api/palette/${encodeURIComponent(filename)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ colorPalette }),
+      body: JSON.stringify(body),
     });
     return response.json();
   },

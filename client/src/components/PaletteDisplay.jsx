@@ -3,6 +3,7 @@ import MetadataDisplay from './MetadataDisplay';
 
 function PaletteDisplay({
   palette,
+  swatchLabels = [],
   isGenerating,
   isSamplingMode,
   currentSampledColor,
@@ -46,13 +47,21 @@ function PaletteDisplay({
         {isGenerating && (
           <span className="placeholder">Generating palette...</span>
         )}
-        {!isGenerating && hasPalette && palette.map((hexColor) => (
+        {!isGenerating && hasPalette && palette.map((hexColor, idx) => (
           <div key={hexColor} className="palette-item">
-            <div
-              className="palette-color"
-              style={{ backgroundColor: hexColor }}
-              title={hexColor}
-            />
+            <div className="palette-swatch-wrapper">
+              <div
+                className="palette-color"
+                style={{ backgroundColor: hexColor }}
+                title={hexColor}
+              />
+              <span
+                className="swatch-label"
+                aria-hidden="true"
+              >
+                {swatchLabels[idx] ?? String.fromCharCode(65 + (idx % 26))}
+              </span>
+            </div>
             <span className="palette-label">{hexColor}</span>
             <button
               type="button"
@@ -92,12 +101,14 @@ function PaletteDisplay({
             }
           }}
         >
-          <div
-            className={`palette-color test-placeholder-swatch ${isSamplingMode ? 'sampling' : ''}`}
-            style={{
-              backgroundColor: isSamplingMode && currentSampledColor ? currentSampledColor : 'transparent',
-            }}
-          />
+          <div className="palette-swatch-wrapper">
+            <div
+              className={`palette-color test-placeholder-swatch ${isSamplingMode ? 'sampling' : ''}`}
+              style={{
+                backgroundColor: isSamplingMode && currentSampledColor ? currentSampledColor : 'transparent',
+              }}
+            />
+          </div>
           <span className="palette-label test-placeholder-label">#888888</span>
         </div>
       </div>

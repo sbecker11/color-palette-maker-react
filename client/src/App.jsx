@@ -9,6 +9,7 @@ import {
   buildExportData,
   applyPaletteToMeta,
   applyPaletteToImages,
+  computeSwatchLabels,
   applyPaletteNameToImages,
   applyRegionsToImages,
 } from './AppHelpers';
@@ -238,7 +239,8 @@ function App() {
       setImages((prev) => applyPaletteToImages(prev, filename, newPalette));
       if (filename) {
         try {
-          const result = await api.savePalette(filename, newPalette);
+          const labels = computeSwatchLabels(newPalette);
+          const result = await api.savePalette(filename, newPalette, labels);
           if (!result.success) {
             showMessage(result.message || 'Error saving palette.', true);
           }
@@ -283,7 +285,8 @@ function App() {
     setImages((prev) => applyPaletteToImages(prev, filename, newPalette));
 
     if (filename) {
-      api.savePalette(filename, newPalette).catch(() => {
+      const labels = computeSwatchLabels(newPalette);
+      api.savePalette(filename, newPalette, labels).catch(() => {
         showMessage('Error saving palette.', true);
       });
     }
@@ -484,6 +487,11 @@ function App() {
   }, []);
 
   const palette = selectedMeta?.colorPalette;
+  const swatchLabels = selectedMeta?.swatchLabels &&
+    Array.isArray(selectedMeta.swatchLabels) &&
+    selectedMeta.swatchLabels.length === (palette?.length ?? 0)
+    ? selectedMeta.swatchLabels
+    : computeSwatchLabels(palette || []);
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
 
   return (
@@ -504,6 +512,7 @@ function App() {
         </div>
         <PaletteDisplay
           palette={palette}
+          swatchLabels={swatchLabels}
           isGenerating={paletteGenerating}
           isSamplingMode={isSamplingMode}
           currentSampledColor={currentSampledColor}
