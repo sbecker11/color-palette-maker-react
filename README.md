@@ -4,336 +4,46 @@
   <img src="media/gold.png" width="67%" alt="gold" />
 </a>
 
-A React-based single-page application for extracting and managing color palettes from images. Upload images via URL or file; use automated region detection and manual region editing to control which portions of the image are used to compute palette swatches by K-means; extract dominant colors and export palettes as JSON.
-
-## Features
-
-### Key Features
-
-- **Region detection**: Python/OpenCV subprocess; adaptive thresholding, Otsu, Canny edge detection, and LAB K-means color segmentation; outputs polygon regions for overlay and masked K-means when regions exist.
-- **Palette extraction**: K-means clustering with configurable K (5, 7, 9); luminance-based filtering; CIEDE2000 perceptual distance (color-diff) for nearest-cluster matching; masked by regions when present.
-
-### Terminology
-
-- **Palette swatches**: K-means automatically computes palette swatches. Each is a color-filled **swatch circle** with its hex beneath and a capital-letter **swatch label** at center. Delete via the close X at top right; add new swatches by clicking the **empty swatch circle** (bottom of list) to enter **manual swatch creation mode** (cursor shows `+`), then double-click the palette image to add.
-- **Palette regions**: Separate from swatches. **Detect Regions** computes and displays them. Each region has a **region boundary** (polygon), a **region circle** at its geometric center, the average **region hex value** beneath the circle, and a numeric **region label** at center. Use **Remove Region (click)** to delete one, **Clear all Regions** to remove all.
-
-- **Image Sources**: Upload images from URL or local file
-- **Region Overlay**: SVG overlay with region boundaries, region circles, region hex values, and region labels; dual-layer text for visibility on light/dark backgrounds; 1px black shadow on circles; golden glow on highlighted swatches
-- **Match palette swatches**: Toggle to show palette swatch circles over each region on the image. When on, hovering a panel swatch highlights all matching overlays (and vice versa); hovering a region highlights the matching panel swatch and all regions sharing that swatch
-- **Image viewer**: Uses full available space; entire image visible (fit-to-container, top-aligned); region overlays scale with the image
-- **Manual swatch creation**: Turn on **Adding swatches** toggle or click the empty swatch circle → cursor `+` → double-click palette image to add color; turn off the toggle or click empty swatch to exit
-- **Palette Management**: Rename palettes, delete individual swatches, duplicate palettes (auto-increment names), export as JSON
-- **Theme Toggle**: Light and dark mode support
-- **Color Palettes**: Browse, select, delete, reorder (move to top/bottom or step up/down), and duplicate stored palettes
-- **Metadata**: JSONL persistence to `image_metadata.jsonl`; each image record includes: image info (`createdDateTime`, `uploadedURL`, `uploadedFilePath`, `cachedFilePath`, `width`, `height`, `format`, `fileSizeBytes`), palette (`colorPalette` hex array, `paletteName`), and regions (`regions` as polygon arrays `[[x,y], ...]`, `paletteRegion` as region display data `{ hex, regionColor, x, y }` per region)
-
-### Key Actions
-
-- **Reorder (⏫ ⏬ ⬆️ ⬇️)**: Use the left column (⏫ move to top, ⏬ move to bottom) or the inner column (⬆️ move up one, ⬇️ move down one) next to each item in the Color Palettes list. Order is persisted to the server.
-- **Palette Name**: Edit the name in the "Palette Name" input and click away (blur) to save. The name is persisted automatically.
-- **Regenerate (K-means)**: Replace the current palette colors with a freshly computed set from the image using K-means clustering (K=5, 7, or 9).
-- **Detect Regions**: Uses a Python subprocess (OpenCV) to detect large regions in the image. Regions are displayed as overlays; use K-means to extract colors only from masked regions.
-- **Remove Region (click)**: Enter delete mode so you can click individual region boundaries to remove them one at a time. Click outside the palette image to exit. Requires regions to exist.
-- **Clear all Regions**: Remove all detected regions at once.
-- **Adding swatches**: Toggle to enter or exit manual swatch creation mode (same as clicking the empty swatch circle). Cursor shows `+` while active; double-click the palette image to add a color. Turn off the toggle to exit.
-- **Match palette swatches**: When regions exist, toggle to show or hide palette swatch circles on the image overlay. When shown, swatch and region highlights sync: hover a panel swatch to highlight all overlays with that color; hover a region or overlay to highlight the matching panel swatch and all regions with the same swatch.
-- **Export**: Download the palette as a JSON file for use in external integrations (design tools, other apps, code). The exported format is `{ name, colors: [...] }`. Palette changes within the app are saved to the server automatically; Export is only for creating downloadable files.
+A React + Node.js app for extracting and managing color palettes from images.
+Upload via URL or file, extract dominant colors with K-means clustering,
+detect image regions with OpenCV, and export palettes as JSON.
 
 ## Tech Stack
 
 - **Frontend**: React 19, Vite 7
 - **Backend**: Node.js, Express
 - **Image Processing**: Sharp, node-kmeans, get-pixels, color-diff (CIEDE2000)
-- **Region Detection**: Python 3, OpenCV (opencv-python), NumPy
+- **Region Detection**: Python 3, OpenCV, NumPy
 - **Testing**: Vitest, React Testing Library, happy-dom
 
-## Prerequisites
-
-- Node.js 18+ (20.19+ or 22.12+ recommended for Vite 7)
-- npm
-- Python 3 with opencv-python and numpy — required for region detection (a core feature). Use a virtual environment (recommended) or system Python. Override with `DETECT_REGIONS_PYTHON=/path/to/python` if needed.
-
-## Installation
-
-Complete all steps below before running the app. All three steps are required for full functionality, including region detection.
+## Quick Start
 
 ```bash
-# 1. Install root dependencies (backend + dev tools)
 npm install
-
-# 2. Install client dependencies (React app)
 cd client && npm install && cd ..
-
-# 3. Create venv and install Python dependencies (opencv-python, numpy) for region detection
-python3 -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-The development and production build scripts first activate the Python venv (using `source venv/bin/activate` or equivalent) before starting the backend server, so region detection works in both environments. If you run the server manually, activate the venv first or the server will auto-detect `./venv` when present.
-
-## Development
-
-Run both the backend server and React dev server:
-
-```bash
 npm run dev
 ```
 
-This starts:
-- **Backend**: http://localhost:3000 (Express API)
-- **Frontend**: http://localhost:5173 (Vite dev server with hot reload)
+Opens at http://localhost:5173 (Vite dev server) with API at http://localhost:3000.
 
-The Vite dev server proxies `/api`, `/upload`, and `/uploads` to the backend. In development, the frontend runs on port 5173 and the API on 3000.
-
-To run them separately:
+For region detection, also install Python dependencies:
 
 ```bash
-# Terminal 1: Backend only
-npm run dev:server
-
-# Terminal 2: Frontend only
-npm run dev:client
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-Open Chrome in app mode:
-
-    chrome --app=http://localhost:5173
-    open -a "Google Chrome" --args --app=http://localhost:5173   # macOS
-
-Or open Chrome in normal dev mode:
-
-    chrome http://localhost:5173
-    open -a "Google Chrome" http://localhost:5173   # macOS
-
-## Production Build
-
-Ensure you have completed [Installation](#installation) (including venv and Python packages) before building and starting. The `npm start` script activates the venv before starting the server. The commands below do **not** create the venv or install Python dependencies.
-
-```bash
-# Build the React app
-npm run build
-
-# Start the server (serves built React app + API at localhost:3000)
-npm start
-```
-
-To build with coverage and then start:
-
-```bash
-npm run build:with-coverage; npm start
-```
-
-Open Chrome in app mode:
-
-    chrome --app=http://localhost:3000
-    open -a "Google Chrome" --args --app=http://localhost:3000   # macOS
-
-Or open Chrome in normal dev mode:
-
-    chrome http://localhost:3000
-    open -a "Google Chrome" http://localhost:3000   # macOS
-
-The server will serve the React app from `client/dist` and the API at the same origin. In production, both the built app and the API are served from port 3000.
-
-## Docker
-
-The Dockerfile includes Node.js, Python, and OpenCV so region detection works out of the box.
-
-### Local development
-
-Build and run with Docker:
-
-```bash
-docker build -t color-palette-maker .
-docker run -p 3000:3000 color-palette-maker
-```
-
-Open http://localhost:3000. The image serves the built React app and API. For hot-reload development, use `npm run dev` instead (see [Development](#development)).
-
-### Production deployment
-
-Build and push the image to your registry, then run it on your host or orchestration platform:
-
-```bash
-# Build
-docker build -t your-registry/color-palette-maker:latest .
-
-# Push (example)
-docker push your-registry/color-palette-maker:latest
-
-# Run on host
-docker run -d -p 3000:3000 --name color-palette-maker your-registry/color-palette-maker:latest
-```
-
-Use `-v` to persist `uploads/` across restarts:
-
-```bash
-docker run -d -p 3000:3000 \
-  -v $(pwd)/uploads:/app/uploads \
-  --name color-palette-maker your-registry/color-palette-maker:latest
-```
-
-Metadata is stored in `image_metadata.jsonl` inside the container; back it up or use a volume if you need persistence across image updates.
-
-## Migration Guides
-
-The `docs/` directory contains implementation outlines for evolving the deployment architecture:
-
-- **[Single-User-SPA-DockerCompose-migration.md](docs/Single-User-SPA-DockerCompose-migration.md)** — Steps to split the app into separate frontend, backend, and image-processor services on Docker Compose. Useful for learning multi-service orchestration or preparing for scaling.
-- **[Multi-User-SaaS-Kubenetes-migration.md](docs/Multi-User-SaaS-Kubenetes-migration.md)** — Steps to migrate the single-user SPA to a multi-user SaaS on Kubernetes, including auth, PostgreSQL, object storage (S3/GCS), and stateless pods. For commercial or multi-tenant deployments.
-
-## Testing
-
-```bash
-# Run tests once
-npm test
-
-# Run tests in watch mode (from client directory)
-cd client && npm run test:watch
-```
-
-Tests cover:
-- **Client**: Utility functions (filename parsing, file size formatting, RGB to hex), API client, React components (Header, PaletteDisplay, ImageLibrary, MetadataDisplay, UploadForm, ImageViewer)
-- **Server modules** (run via Vitest in client): `metadata_handler` (read, append, rewrite with temp files), `image_processor` (centroidsToPalette, calculateLuminance, minPairwiseColorDistance, pointInPolygon, pointInAnyRegion)
-- **ImageViewer geometry**: Extracted pure functions `polygonCentroid`, `shrinkPolygon`, `polygonToPath` in `imageViewerGeometry.js`
-
-Run `npm run test:coverage` to generate a coverage report saved to a timestamped file (e.g. `coverage-report-2025-02-13T15-30-00.html`) in the client directory. Run `npm run build:with-coverage` to build and then generate the coverage report (does not start the server).
-
-## Continuous Integration
-
-The repository includes a [GitHub Actions workflow](.github/workflows/ci.yml) that runs on every push and pull request to `master` or `main`. The workflow:
-
-1. **Install dependencies** — Root and client `npm install`
-2. **Lint** — `cd client && npm run lint` (ESLint)
-3. **Test** — `npm test`
-4. **Build** — `npm run build`
-
-CI must pass before merging pull requests.
-
-### Recent CI/CD Improvements (Low-Effort)
-
-The following changes improve test coverage and confidence in CI without adding heavy infrastructure:
-
-| Change | Benefit |
-|--------|---------|
-| **metadata_handler tests** | Unit tests for `readMetadata`, `appendMetadata`, `rewriteMetadata` using temp files. Ensures JSONL parsing, ENOENT handling, and overwrite behavior work correctly. |
-| **image_processor tests** | Added tests for `pointInPolygon` and `pointInAnyRegion` (ray-casting, region masking). Prevents regressions in K-means region masking. |
-| **imageViewerGeometry module** | Extracted `polygonCentroid`, `shrinkPolygon`, `polygonToPath` from ImageViewer into `imageViewerGeometry.js`. Pure functions are unit-tested; SVG region overlays stay correct across refactors. |
-
-These tests run in the existing Vitest suite (`npm test`) and require no CI workflow changes.
-
-## Future Improvements
-
-- **CI/CD**: Add `docker-compose.yml` for local dev with Python/OpenCV. (`.github/workflows/ci.yml`, `.env.example`, and `Dockerfile` are in place.)
-- **Testing (higher-effort)**:
-  - **Express route tests** (supertest): Mock handlers and test GET /api/images, POST /upload, palette/regions endpoints. Validates status codes, error handling, and filename validation (path traversal).
-  - **API integration tests**: Start the real server with a temp `uploads` dir; hit routes and assert persisted metadata. Catches integration bugs without full E2E.
-  - **E2E tests** (Playwright/Cypress): Upload image → generate palette → export JSON. Ensures critical user flows work end-to-end.
-  - **Coverage thresholds**: Add Vitest coverage thresholds (e.g. 80% statements); fail CI when coverage drops.
-  - **Docker build in CI**: Add `docker build` step to ensure the image builds on every commit.
-- **Architecture**: Refactor App.jsx (useReducer or context) to reduce useState and prop-drilling; reduce PaletteDisplay props.
-- **Server / code quality**: Remove dead code in image_processor.js; DRY filename validation (middleware or `validateFilename()`); review metadata_handler race condition on concurrent read/rewrite.
-- **Documentation**: Document metadata_handler concurrency in code.
-
-*Quick wins: dead code cleanup. Larger investments: useReducer refactor, Express route tests, E2E tests.*
-
-## Project Structure
-
-```
-color-palette-maker-react/
-├── client/                 # React frontend (Vite)
-│   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── api.js         # API client
-│   │   ├── utils.js       # Helper functions
-│   │   ├── imageViewerGeometry.js  # Polygon helpers (centroid, shrink, path)
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── vite.config.js
-│   └── package.json
-├── server.js              # Express server
-├── metadata_handler.js    # Image metadata (JSONL)
-├── image_processor.js     # K-means palette generation
-├── docs/                  # Migration guides (Docker Compose, Kubernetes SaaS)
-├── scripts/detect_regions.py  # Python/OpenCV region detection
-├── requirements.txt       # Python deps (opencv-python, numpy)
-├── uploads/               # Uploaded images
-└── package.json
-```
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/images` | List all images with metadata |
-| PUT | `/api/images/order` | Reorder images (body: `{ filenames: [...] }`) |
-| POST | `/api/images/:filename/duplicate` | Duplicate image and palette |
-| POST | `/upload` | Upload image (file or URL) |
-| POST | `/api/regions/:filename` | Detect regions using Python/OpenCV |
-| POST | `/api/palette/:filename` | Generate color palette (add `?regenerate=true` to force recompute; body `{ regions, k }` for masked K-means) |
-| PUT | `/api/palette/:filename` | Save updated palette |
-| PUT | `/api/metadata/:filename` | Update palette name |
-| DELETE | `/api/images/:filename` | Delete image and metadata |
-
-## Region and Palette Pipeline
-
-This section describes how regions, region colors, K-means clustering, and overlays work together.
-
-### 1. How region boundaries are computed
-
-Region detection runs a Python subprocess (`scripts/detect_regions.py`) that uses OpenCV. The script applies adaptive thresholding, Otsu binarization, Canny edge detection, and color-based segmentation (LAB K-means on the color wheel) to identify large, distinct regions in the image. Detected regions are returned as polygons (arrays of `[x, y]` vertices). The server invokes this script via `POST /api/regions/:filename` when you click "Detect Regions."
-
-### 2. How regions can be manually deleted
-
-Choose **Remove region (click)** from the action menu to enter delete mode (detecting regions also enters this mode). Each region polygon is drawn as an overlay on the image. Click a region to remove it; the polygon is deleted and the overlay updates immediately. Click outside the image to exit delete mode. Regions are saved to the server when you remove one. Use **Clear all regions** to remove all regions at once.
-
-### 3. How region average colors are computed
-
-For each region polygon, the app sums the RGB values of all opaque pixels whose coordinates fall inside the polygon (using point-in-polygon tests). The average is computed as `(sumR/count, sumG/count, sumB/count)` and converted to a hex string (`#RRGGBB`). Pixels with alpha ≤ 128 are skipped. Pixel coordinates are derived from the image buffer using row-major layout: for `get-pixels` shape `[rows, columns, 4]`, column `x = pixelIndex % width` and row `y = Math.floor(pixelIndex / width)`.
-
-### 4. How region boundaries and average hex color are displayed on the overlay
-
-When regions exist, an SVG overlay is drawn on top of the palette image. Each region polygon is rendered with a semi-transparent fill and stroke. For each region, an empty circle (white 1px stroke) is drawn at the polygon centroid, and the region’s average hex color is displayed underneath it. Region circles and swatch overlay circles have a 1px black shadow. Text uses a dual-layer (black at base, white offset) for visibility on both light and dark backgrounds. When **Match palette swatches** is on, each region also shows a filled swatch circle with the nearest palette color; highlighted swatches display a golden glow ring.
-
-### 5. How K-means cluster swatches are computed
-
-K-means clustering uses the `node-kmeans` library. Two modes apply:
-
-- **a) Regions defined:** If regions exist, only pixels inside at least one region polygon are included in the K-means input. Opaque pixels are filtered by luminance (excluding near-black and near-white). The result is a palette of dominant colors from the masked image.
-- **b) No regions:** If no regions are defined, then K-means is applied to all pixels in the image. Opaque pixels are filtered by luminance, then clustered. The palette size (K) is chosen via the Regenerate action (5, 7, or 9 colors).
-
-### 6. How the most similar (nearest in color space) palette swatch is computed for each region
-
-For each region, the region average color (RGB) is compared to every color in the K-means palette using the CIEDE2000 (ΔE) perceptual distance via the `color-diff` library. The palette color with the smallest ΔE is the “nearest” palette swatch for that region. All comparisons use sRGB; the library converts to LAB internally for perceptual distance only.
-
-### 7. How the nearest palette swatch and its hex color are displayed for a given region
-
-Each region gets a filled circle (the “swatch circle”) drawn near the region centroid (top-right of the empty region circle). The swatch is filled with the nearest palette color, and its hex string is shown underneath. The region circle shows the region average hex; the swatch circle shows the nearest palette hex. Both use the same dual-layer text styling for readability.
-
-### 8. How region boundaries and their average hex colors are stored
-
-Regions and their associated data are persisted in `image_metadata.jsonl`. Each image entry can include:
-
-- `regions`: Array of polygon arrays (`[[x,y], ...]`).
-- `paletteRegion`: Array of `{ hex, regionColor, x, y }` per region, where `regionColor` is the region average hex, `hex` is the nearest palette color, and `(x, y)` is the region centroid. Palette region data is recomputed when regions change or when the palette is regenerated.
-
-### 9. Nearest palette swatch mapping is computed on demand
-
-The nearest palette swatch (`hex` in each region's display data) is computed whenever you run Regenerate (K-means) or Detect Regions. It is stored in metadata at that moment. To refresh nearest swatch mappings after changing the palette or regions, run Regenerate (K-means 5, 7, or 9) again.
-
-### 10. Swatch–overlay highlight sync (one-to-many)
-
-One palette swatch in the panel may correspond to zero or more overlay swatches on the image (multiple regions can share the same nearest color). When **Match palette swatches** is on:
-
-- Hovering a panel swatch highlights all overlay swatches with that color.
-- Hovering a region (or its overlay swatch) highlights the matching panel swatch and all regions that share that swatch (boundaries, circles, overlays).
-- When **Match palette swatches** is off, region hover does not highlight panel swatches.
-
-### 11. Image viewer layout
-
-The image viewer container uses flex layout to occupy all remaining space between the left and middle panels. The palette image is displayed with `object-fit: contain` so the entire image is visible (no cropping); it is top-aligned within the container. Region overlays scale and align with the image.
+## Documentation
+
+| Doc | Description |
+|-----|-------------|
+| [User Guide](docs/USER_GUIDE.md) | Features, key actions, color sampling, region workflow |
+| [API Reference](docs/API.md) | REST endpoints, request/response formats |
+| [Architecture](docs/ARCHITECTURE.md) | Region & palette pipeline, data flow, storage format |
+| [Development](docs/DEVELOPMENT.md) | Setup, build, test, Docker, project structure |
+| [Action Items](ACTIONS.md) | Improvement backlog from code review |
+| [Single-User SPA → Docker Compose](docs/Single-User-SPA-DockerCompose-migration.md) | Multi-service orchestration outline |
+| [Multi-User SaaS → Kubernetes](docs/Multi-User-SaaS-Kubenetes-migration.md) | Kubernetes migration outline |
 
 ## License
 
