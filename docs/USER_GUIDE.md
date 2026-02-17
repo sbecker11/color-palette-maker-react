@@ -49,7 +49,7 @@ Light and dark mode support.
 
 ### Color Palettes List
 
-Browse, select, delete, reorder (move to top/bottom or step up/down), and duplicate stored palettes.
+Browse, select, delete, reorder (move to top/bottom or step up/down), and duplicate stored palettes. **Newly uploaded palette images automatically appear at the top of the list**, sorted by upload time (newest first). You can reorder palettes manually using the reorder buttons, but new uploads will always appear at the top.
 
 ---
 
@@ -57,7 +57,7 @@ Browse, select, delete, reorder (move to top/bottom or step up/down), and duplic
 
 | Action | Description |
 |--------|-------------|
-| **Reorder (⏫ ⏬ ⬆️ ⬇️)** | Left column: ⏫ move to top, ⏬ move to bottom. Inner column: ⬆️ move up one, ⬇️ move down one. Order persisted to server. |
+| **Reorder (⏫ ⏬ ⬆️ ⬇️)** | Left column: ⏫ move to top, ⏬ move to bottom. Inner column: ⬆️ move up one, ⬇️ move down one. Order persisted to server. Note: New uploads always appear at the top regardless of manual reordering. |
 | **Palette Name** | Edit in the input and click away (blur) to save. Persisted automatically. |
 | **Regenerate (K-means)** | Replace palette with freshly computed colors from the image. Choose K=5, 7, or 9. |
 | **Detect Regions** | Python/OpenCV subprocess detects large regions. Use K-means to extract colors only from masked regions. |

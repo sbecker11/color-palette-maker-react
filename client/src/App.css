@@ -383,8 +383,6 @@ input[type="file"] {
   margin-bottom: var(--gap);
   background-color: var(--metadata-bg);
   font-size: 0.85em;
-  max-height: 170px;
-  overflow-y: auto;
   color: var(--text-color);
 }
 #metadataDisplay h3 {
