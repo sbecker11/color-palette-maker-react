@@ -210,7 +210,7 @@ color-palette-maker-react/
 │   ├── index.html, package.json
 │   └── public/
 ├── docs/                   # USER_GUIDE, API, ARCHITECTURE, DEVELOPMENT, FUTURE-WORK, migration outlines
-├── media/                  # README hero assets (gold.png, gold-blue.gif)
+├── media/                  # Local media (optional); README hero assets in GitHub Releases v1.0.0
 ├── scripts/
 │   ├── detect_regions.py   # Python/OpenCV region detection
 │   ├── run-with-venv.js    # Activates venv before starting server

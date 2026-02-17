@@ -10,3 +10,6 @@ client/coverage-report-*.html
 # Runtime / generated data
 image_metadata.jsonl
 uploads/
+
+# Large media (hero images hosted in GitHub Releases v1.0.0)
+media/
