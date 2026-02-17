@@ -127,6 +127,6 @@ describe('ImageViewer', () => {
       />
     );
     const img = document.querySelector('#displayedImage');
-    expect(img).toHaveAttribute('alt', 'Selected Image');
+    expect(img).toHaveAttribute('alt', 'Palette image');
   });
 });

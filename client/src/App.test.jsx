@@ -160,7 +160,7 @@ describe('App', () => {
     api.savePalette.mockResolvedValue({ success: true });
     render(<App />);
     await waitFor(() => expect(api.getImages).toHaveBeenCalled());
-    const deleteButtons = screen.getAllByTitle('Delete swatch');
+    const deleteButtons = screen.getAllByTitle('Delete palette swatch');
     fireEvent.click(deleteButtons[0]);
     await waitFor(() => expect(api.savePalette).toHaveBeenCalled());
   });
@@ -169,7 +169,7 @@ describe('App', () => {
     api.getImages.mockResolvedValue({ success: true, images: [] });
     render(<App />);
     await waitFor(() => expect(api.getImages).toHaveBeenCalled());
-    const placeholderSwatch = screen.getByTitle(/click to sample color/i);
+    const placeholderSwatch = screen.getByTitle(/click to enter add swatch mode/i);
     fireEvent.click(placeholderSwatch);
     expect(screen.getByText(/select an image first/i)).toBeInTheDocument();
   });
@@ -177,7 +177,7 @@ describe('App', () => {
   it('calls handleToggleSamplingMode when placeholder swatch clicked with selection', async () => {
     render(<App />);
     await waitFor(() => expect(api.getImages).toHaveBeenCalled());
-    const placeholderSwatch = screen.getByTitle(/click to sample color/i);
+    const placeholderSwatch = screen.getByTitle(/click to enter add swatch mode/i);
     fireEvent.click(placeholderSwatch);
     expect(document.body.classList.contains('sampling-active')).toBe(true);
   });
@@ -219,7 +219,7 @@ describe('App', () => {
     api.savePalette.mockResolvedValue({ success: false, message: 'Save failed' });
     render(<App />);
     await waitFor(() => expect(api.getImages).toHaveBeenCalled());
-    const deleteButtons = screen.getAllByTitle('Delete swatch');
+    const deleteButtons = screen.getAllByTitle('Delete palette swatch');
     fireEvent.click(deleteButtons[0]);
     await waitFor(() =>
       expect(screen.getByText(/error saving palette|save failed/i)).toBeInTheDocument()

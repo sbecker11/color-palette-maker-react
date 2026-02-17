@@ -143,11 +143,43 @@ export function applyPaletteNameToImages(images, filename, paletteName) {
 }
 
 /**
- * Returns images array with regions updated for the file matching filename.
+ * Normalizes meta for paletteRegion: uses paletteRegion if present, else falls back to legacy key.
+ * Call when loading metadata to support existing records.
+ */
+export function normalizeMetaPaletteRegion(meta) {
+  if (!meta) return meta;
+  if (meta.paletteRegion != null) return meta;
+  const legacy = meta.clusterMarkers; // legacy JSONL key
+  const paletteRegion = Array.isArray(legacy) ? legacy : [];
+  return { ...meta, paletteRegion };
+}
+
+/**
+ * Computes region labels (00, 01, 02, ...).
+ * @param {Array[]} regions - Array of region polygons
+ * @returns {string[]}
+ */
+export function computeRegionLabels(regions) {
+  if (!Array.isArray(regions)) return [];
+  return regions.map((_, i) => String(i).padStart(2, '0'));
+}
+
+/**
+ * Returns meta with regions and regionLabels updated.
+ */
+export function applyRegionsToMeta(meta, regions) {
+  if (!meta) return meta;
+  const regionLabels = computeRegionLabels(regions);
+  return { ...meta, regions, regionLabels };
+}
+
+/**
+ * Returns images array with regions and regionLabels updated for the file matching filename.
  */
 export function applyRegionsToImages(images, filename, regions) {
   if (!images) return [];
+  const regionLabels = computeRegionLabels(regions);
   return images.map((m) =>
-    getFilenameFromMeta(m) === filename ? { ...m, regions } : m
+    getFilenameFromMeta(m) === filename ? { ...m, regions, regionLabels } : m
   );
 }

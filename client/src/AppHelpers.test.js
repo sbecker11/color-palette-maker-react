@@ -10,6 +10,10 @@ import {
   applyPaletteNameToImages,
   indexToLabel,
   computeSwatchLabels,
+  computeRegionLabels,
+  applyRegionsToMeta,
+  applyRegionsToImages,
+  normalizeMetaPaletteRegion,
 } from './AppHelpers';
 
 describe('AppHelpers', () => {
@@ -201,6 +205,60 @@ describe('AppHelpers', () => {
         cachedFilePath: '/b.jpeg',
         colorPalette: ['#ff0000'],
         swatchLabels: ['A'],
+      });
+    });
+  });
+
+  describe('normalizeMetaPaletteRegion', () => {
+    it('returns meta unchanged when paletteRegion exists', () => {
+      const meta = { paletteRegion: [{ x: 1, y: 1 }] };
+      expect(normalizeMetaPaletteRegion(meta)).toBe(meta);
+    });
+    it('adds paletteRegion from legacy key when missing', () => {
+      const meta = { clusterMarkers: [{ hex: '#fff', x: 0, y: 0 }] };
+      const result = normalizeMetaPaletteRegion(meta);
+      expect(result.paletteRegion).toEqual([{ hex: '#fff', x: 0, y: 0 }]);
+    });
+    it('returns empty array when legacy key missing', () => {
+      const meta = { cachedFilePath: '/x.jpeg' };
+      const result = normalizeMetaPaletteRegion(meta);
+      expect(result.paletteRegion).toEqual([]);
+    });
+  });
+
+  describe('computeRegionLabels', () => {
+    it('returns 00,01,02 for three regions', () => {
+      expect(computeRegionLabels([[], [], []])).toEqual(['00', '01', '02']);
+    });
+    it('returns empty for non-array', () => {
+      expect(computeRegionLabels(null)).toEqual([]);
+    });
+  });
+
+  describe('applyRegionsToMeta', () => {
+    it('returns meta with regions and regionLabels updated', () => {
+      const meta = { cachedFilePath: '/x.jpeg' };
+      expect(applyRegionsToMeta(meta, [[0, 0], [1, 1]])).toEqual({
+        cachedFilePath: '/x.jpeg',
+        regions: [[0, 0], [1, 1]],
+        regionLabels: ['00', '01'],
+      });
+    });
+  });
+
+  describe('applyRegionsToImages', () => {
+    it('updates only matching image with regions and regionLabels', () => {
+      const images = [
+        { cachedFilePath: '/a.jpeg' },
+        { cachedFilePath: '/b.jpeg' },
+      ];
+      const regions = [[0, 0]];
+      const result = applyRegionsToImages(images, 'b.jpeg', regions);
+      expect(result[0]).toBe(images[0]);
+      expect(result[1]).toEqual({
+        cachedFilePath: '/b.jpeg',
+        regions: [[0, 0]],
+        regionLabels: ['00'],
       });
     });
   });

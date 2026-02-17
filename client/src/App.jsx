@@ -12,6 +12,9 @@ import {
   computeSwatchLabels,
   applyPaletteNameToImages,
   applyRegionsToImages,
+  applyRegionsToMeta,
+  computeRegionLabels,
+  normalizeMetaPaletteRegion,
 } from './AppHelpers';
 import Header from './components/Header';
 import UploadForm from './components/UploadForm';
@@ -34,12 +37,20 @@ function App() {
   const [regions, setRegions] = useState([]);
   const [isDeleteRegionMode, setIsDeleteRegionMode] = useState(false);
   const [regionsDetecting, setRegionsDetecting] = useState(false);
+  const [showMatchPaletteSwatches, setShowMatchPaletteSwatches] = useState(false);
+  // One palette swatch may map to zero or more overlays (sync highlight between panel swatch and image overlays)
+  const [hoveredSwatchIndex, setHoveredSwatchIndex] = useState(null);
 
   // Apply theme to document
   useEffect(() => {
     document.body.dataset.theme = theme;
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // Clear swatch highlight when match palette swatches is turned off
+  useEffect(() => {
+    if (!showMatchPaletteSwatches) setHoveredSwatchIndex(null);
+  }, [showMatchPaletteSwatches]);
 
   const showMessage = useCallback((text, isError = false) => {
     setMessage({ text, isError });
@@ -54,9 +65,10 @@ function App() {
     try {
       const data = await api.getImages();
       if (data.success && data.images) {
-        setImages(data.images);
-        if (data.images.length > 0 && selectFirst) {
-          const first = data.images[0];
+        const normalized = data.images.map(normalizeMetaPaletteRegion);
+        setImages(normalized);
+        if (normalized.length > 0 && selectFirst) {
+          const first = normalized[0];
           const filename = getFilenameFromMeta(first);
           if (filename) {
             setSelectedMeta(first);
@@ -387,15 +399,16 @@ function App() {
       .generatePalette(filename, opts)
       .then((result) => {
         if (result.success && result.palette) {
+          const paletteRegions = Array.isArray(result.paletteRegion) ? result.paletteRegion : [];
           const updatedMeta = {
             ...applyPaletteToMeta(selectedMeta, result.palette),
-            clusterMarkers: Array.isArray(result.clusterMarkers) ? result.clusterMarkers : [],
+            paletteRegion: paletteRegions,
           };
           setSelectedMeta(updatedMeta);
           setImages((prev) =>
             prev.map((m) =>
               getFilenameFromMeta(m) === filename
-                ? { ...m, colorPalette: result.palette, clusterMarkers: updatedMeta.clusterMarkers }
+                ? { ...m, colorPalette: result.palette, paletteRegion: paletteRegions }
                 : m
             )
           );
@@ -424,9 +437,18 @@ function App() {
       const result = await api.detectRegions(filename);
       if (result.success && result.regions) {
         const newRegions = result.regions;
+        const newPaletteRegions = Array.isArray(result.paletteRegion) ? result.paletteRegion : [];
         setRegions(newRegions);
-        setSelectedMeta((prev) => (prev ? { ...prev, regions: newRegions } : prev));
-        setImages((prev) => applyRegionsToImages(prev, filename, newRegions));
+        setSelectedMeta((prev) =>
+          prev ? { ...applyRegionsToMeta(prev, newRegions), paletteRegion: newPaletteRegions } : prev
+        );
+        setImages((prev) =>
+          prev.map((m) =>
+            getFilenameFromMeta(m) === filename
+              ? { ...m, ...applyRegionsToMeta(m, newRegions), paletteRegion: newPaletteRegions }
+              : m
+          )
+        );
         setIsDeleteRegionMode(true);
         showMessage(`Detected ${newRegions.length} region(s). Saved. Click to remove unwanted; click outside to exit.`);
       } else {
@@ -444,15 +466,19 @@ function App() {
     const filename = getFilenameFromMeta(selectedMeta);
     if (!filename) return;
     const emptyRegions = [];
-    const emptyMarkers = [];
+    const emptyPaletteRegions = [];
     setRegions(emptyRegions);
-    setSelectedMeta((prev) => (prev ? { ...prev, regions: emptyRegions, clusterMarkers: emptyMarkers } : prev));
+    setSelectedMeta((prev) => (prev ? { ...applyRegionsToMeta(prev, emptyRegions), paletteRegion: emptyPaletteRegions } : prev));
     setImages((prev) =>
-      prev.map((m) => (getFilenameFromMeta(m) === filename ? { ...m, regions: emptyRegions, clusterMarkers: emptyMarkers } : m))
+      prev.map((m) =>
+        getFilenameFromMeta(m) === filename
+          ? { ...m, ...applyRegionsToMeta(m, emptyRegions), paletteRegion: emptyPaletteRegions }
+          : m
+      )
     );
     setIsDeleteRegionMode(false);
     try {
-      await api.saveMetadata(filename, { regions: emptyRegions });
+      await api.saveMetadata(filename, { regions: emptyRegions, regionLabels: [] });
       showMessage('Regions cleared.');
     } catch {
       showMessage('Failed to save.', true);
@@ -464,22 +490,26 @@ function App() {
     const filename = getFilenameFromMeta(selectedMeta);
     if (!filename) return;
     const updated = regions.filter((_, i) => i !== index);
-    const updatedMarkers = (selectedMeta.clusterMarkers || []).filter((_, i) => i !== index);
+    const paletteRegions = selectedMeta?.paletteRegion ?? [];
+    const updatedPaletteRegions = (Array.isArray(paletteRegions) ? paletteRegions : []).filter((_, i) => i !== index);
+    const updatedLabels = computeRegionLabels(updated);
     setRegions(updated);
-    setSelectedMeta((prev) => (prev ? { ...prev, regions: updated, clusterMarkers: updatedMarkers } : prev));
+    setSelectedMeta((prev) => (prev ? { ...applyRegionsToMeta(prev, updated), paletteRegion: updatedPaletteRegions } : prev));
     setImages((prev) =>
       prev.map((m) =>
-        getFilenameFromMeta(m) === filename ? { ...m, regions: updated, clusterMarkers: updatedMarkers } : m
+        getFilenameFromMeta(m) === filename
+          ? { ...m, ...applyRegionsToMeta(m, updated), paletteRegion: updatedPaletteRegions }
+          : m
       )
     );
-    api.saveMetadata(filename, { regions: updated }).catch(() => {
+    api.saveMetadata(filename, { regions: updated, regionLabels: updatedLabels }).catch(() => {
       showMessage('Failed to save region change.', true);
     });
   }, [selectedMeta, regions, showMessage]);
 
   const handleEnterDeleteRegionMode = useCallback(() => {
     setIsDeleteRegionMode(true);
-    showMessage('Click a region to remove it; click outside to exit.');
+    showMessage('Click a region boundary to remove it; click outside to exit.');
   }, [showMessage]);
 
   const handleExitDeleteRegionMode = useCallback(() => {
@@ -531,6 +561,10 @@ function App() {
           onEnterDeleteRegionMode={handleEnterDeleteRegionMode}
           regionsDetecting={regionsDetecting}
           hasRegions={regions && regions.length > 0}
+          showMatchPaletteSwatches={showMatchPaletteSwatches}
+          onShowMatchPaletteSwatchesChange={setShowMatchPaletteSwatches}
+          hoveredSwatchIndex={hoveredSwatchIndex}
+          onSwatchHover={setHoveredSwatchIndex}
         />
         <ImageViewer
           imageUrl={selectedImageUrl}
@@ -538,10 +572,22 @@ function App() {
           onSampledColorChange={setCurrentSampledColor}
           onDoubleClickAddColor={handleDoubleClickAddColor}
           regions={regions}
-          clusterMarkers={selectedMeta?.clusterMarkers}
+          paletteRegion={selectedMeta?.paletteRegion}
+          regionLabels={
+            selectedMeta?.regionLabels &&
+            Array.isArray(selectedMeta.regionLabels) &&
+            selectedMeta.regionLabels.length === (regions?.length ?? 0)
+              ? selectedMeta.regionLabels
+              : computeRegionLabels(regions || [])
+          }
           isDeleteRegionMode={isDeleteRegionMode}
           onRegionClick={handleRegionClick}
           onExitDeleteRegionMode={handleExitDeleteRegionMode}
+          showMatchPaletteSwatches={showMatchPaletteSwatches}
+          palette={palette}
+          swatchLabels={swatchLabels}
+          hoveredSwatchIndex={hoveredSwatchIndex}
+          onSwatchHover={setHoveredSwatchIndex}
         />
       </main>
     </>

@@ -22,6 +22,10 @@ function PaletteDisplay({
   onEnterDeleteRegionMode,
   regionsDetecting,
   hasRegions,
+  showMatchPaletteSwatches = false,
+  onShowMatchPaletteSwatchesChange,
+  hoveredSwatchIndex = null,
+  onSwatchHover,
 }) {
   const [actionSelect, setActionSelect] = useState('');
   const hasPalette = palette && Array.isArray(palette) && palette.length > 0;
@@ -42,7 +46,7 @@ function PaletteDisplay({
           disabled={!selectedMeta}
         />
       </div>
-      <div id="paletteDisplay">
+      <div id="palette-display">
         <h3 className="palette-display-subtitle">Palette swatches</h3>
         {isGenerating && (
           <span className="placeholder">Generating palette...</span>
@@ -51,9 +55,11 @@ function PaletteDisplay({
           <div key={hexColor} className="palette-item">
             <div className="palette-swatch-wrapper">
               <div
-                className="palette-color"
+                className={`palette-swatch ${hoveredSwatchIndex === idx ? 'highlighted' : ''}`}
                 style={{ backgroundColor: hexColor }}
                 title={hexColor}
+                onMouseEnter={() => onSwatchHover?.(idx)}
+                onMouseLeave={() => onSwatchHover?.(null)}
               />
               <span
                 className="swatch-label"
@@ -66,7 +72,7 @@ function PaletteDisplay({
             <button
               type="button"
               className="swatch-delete-btn"
-              title="Delete swatch"
+              title="Delete palette swatch"
               onClick={(e) => {
                 e.stopPropagation();
                 onDeleteSwatch?.(hexColor);
@@ -81,19 +87,20 @@ function PaletteDisplay({
             No color palette extracted for this image.
           </span>
         )}
-        {/* Sampling placeholder swatch */}
+        {/* Empty swatch circle - click to enter manual swatch creation mode */}
         <div
-          className="palette-item"
+          className="palette-item empty-swatch-circle"
           title={
             isSamplingMode && currentSampledColor
-              ? `Double-click image to add ${currentSampledColor}. Click swatch to cancel.`
+              ? `Double-click palette image to add ${currentSampledColor}. Turn off "Adding swatches" to exit.`
               : isSamplingMode
-                ? 'Double-click image to pick color. Click swatch to cancel sampling.'
-                : 'Click to sample color from image'
+                ? 'Double-click palette image to add color. Turn off "Adding swatches" to exit.'
+                : 'Click to enter add swatch mode (same as "Adding swatches" toggle)'
           }
           onClick={onToggleSamplingMode}
           role="button"
           tabIndex={0}
+          aria-label="Empty swatch circle. Click to toggle add swatch mode (same as Adding swatches)."
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
@@ -103,7 +110,7 @@ function PaletteDisplay({
         >
           <div className="palette-swatch-wrapper">
             <div
-              className={`palette-color test-placeholder-swatch ${isSamplingMode ? 'sampling' : ''}`}
+              className={`palette-swatch test-placeholder-swatch ${isSamplingMode ? 'sampling' : ''}`}
               style={{
                 backgroundColor: isSamplingMode && currentSampledColor ? currentSampledColor : 'transparent',
               }}
@@ -111,6 +118,28 @@ function PaletteDisplay({
           </div>
           <span className="palette-label test-placeholder-label">#888888</span>
         </div>
+      </div>
+      <div id="paletteMatchSwatchesRow" className="palette-toggle-row">
+        <label>
+          <input
+            type="checkbox"
+            checked={showMatchPaletteSwatches}
+            onChange={(e) => onShowMatchPaletteSwatchesChange?.(e.target.checked)}
+            disabled={!hasRegions}
+            aria-label="Show matching palette swatches over image"
+          />
+          Match palette swatches
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={isSamplingMode}
+            onChange={() => onToggleSamplingMode?.()}
+            disabled={!selectedMeta}
+            aria-label="Adding swatches"
+          />
+          Adding swatches
+        </label>
       </div>
       <div id="paletteActionsRow">
         <select
@@ -136,8 +165,8 @@ function PaletteDisplay({
           <option value="delete">(Del)ete</option>
           <option value="duplicate">(Dup)licate</option>
           <option value="detectRegions">{regionsDetecting ? 'Detecting…' : 'Detect Regions'}</option>
-          <option value="enterDeleteRegionMode" disabled={!hasRegions}>Remove region (click)</option>
-          <option value="deleteRegions" disabled={!hasRegions}>Clear all regions</option>
+          <option value="enterDeleteRegionMode" disabled={!hasRegions}>Remove Region (click)</option>
+          <option value="deleteRegions" disabled={!hasRegions}>Clear all Regions</option>
           <option value="kmeans5">K-means (5){hasRegions ? ' (by regions)' : ''}</option>
           <option value="kmeans7">K-means (7){hasRegions ? ' (by regions)' : ''}</option>
           <option value="kmeans9">K-means (9){hasRegions ? ' (by regions)' : ''}</option>

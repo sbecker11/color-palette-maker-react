@@ -15,6 +15,13 @@ const imageProcessor = require('./image_processor');
 const app = express();
 const port = parseInt(process.env.PORT, 10) || 3000;
 
+/** Returns palette region data from meta (paletteRegion or legacy clusterMarkers). */
+function getPaletteRegion(meta) {
+    if (Array.isArray(meta?.paletteRegion)) return meta.paletteRegion;
+    if (Array.isArray(meta?.clusterMarkers)) return meta.clusterMarkers;
+    return [];
+}
+
 /** Computes swatch labels (A, B, C, ..., Z, AA, ...) for a palette. */
 function computeSwatchLabels(palette) {
     if (!Array.isArray(palette)) return [];
@@ -212,14 +219,28 @@ app.post('/api/regions/:filename', async (req, res) => {
             });
             proc.on('error', reject);
         });
-        // Persist regions to metadata
+        // Persist regions to metadata and compute palette region data if palette exists
         const allMetadata = await metadataHandler.readMetadata();
         const idx = allMetadata.findIndex((e) => path.basename(e.cachedFilePath || '') === filename);
+        let paletteRegion = [];
         if (idx >= 0) {
-            allMetadata[idx].regions = result.regions;
+            const regions = result.regions || [];
+            allMetadata[idx].regions = regions;
+            allMetadata[idx].regionLabels = regions.map((_, i) => String(i).padStart(2, '0'));
+            const palette = allMetadata[idx].colorPalette;
+            if (Array.isArray(palette) && palette.length > 0 && regions.length > 0) {
+                try {
+                    paletteRegion = await imageProcessor.computeRegionColorMarkers(imagePath, regions, palette);
+                    allMetadata[idx].paletteRegion = paletteRegion;
+                } catch (mrErr) {
+                    console.warn('[API POST /regions] Could not compute palette region data:', mrErr);
+                }
+            } else {
+                allMetadata[idx].paletteRegion = [];
+            }
             await metadataHandler.rewriteMetadata(allMetadata);
         }
-        res.json({ success: true, ...result });
+        res.json({ success: true, ...result, paletteRegion });
     } catch (err) {
         console.error('[API POST /regions] Error:', err);
         res.status(500).json({ success: false, message: err.message || 'Region detection failed.' });
@@ -258,8 +279,8 @@ app.post('/api/palette/:filename', express.json(), async (req, res) => {
     // Check if palette already exists and is valid - skip cache if ?regenerate=true
     if (!forceRegenerate && !regions && imageMeta.colorPalette && Array.isArray(imageMeta.colorPalette) && imageMeta.colorPalette.length > 0) {
         console.log(`[API POST /palette] Returning cached palette for ${filename}.`);
-        const cachedMarkers = Array.isArray(imageMeta.clusterMarkers) ? imageMeta.clusterMarkers : [];
-        return res.json({ success: true, palette: imageMeta.colorPalette, clusterMarkers: cachedMarkers });
+        const cachedPaletteRegion = getPaletteRegion(imageMeta);
+        return res.json({ success: true, palette: imageMeta.colorPalette, paletteRegion: cachedPaletteRegion });
     }
 
     console.log(`[API POST /palette] Generating palette for ${filename}${forceRegenerate ? ' (regenerate)' : ''}${k != null ? ` k=${k}` : ''}`);
@@ -271,27 +292,27 @@ app.post('/api/palette/:filename', express.json(), async (req, res) => {
         if (regions && regions.length > 0) opts.regions = regions;
         const extractedPalette = await imageProcessor.generateDistinctPalette(imagePath, Object.keys(opts).length ? opts : undefined);
 
-        // Compute region color markers when we have regions + palette
-        let clusterMarkers = [];
+        // Compute palette region data when we have regions + palette
+        let paletteRegion = [];
         if (regions?.length > 0 && extractedPalette?.length > 0) {
             try {
-                clusterMarkers = await imageProcessor.computeRegionColorMarkers(imagePath, regions, extractedPalette);
+                paletteRegion = await imageProcessor.computeRegionColorMarkers(imagePath, regions, extractedPalette);
             } catch (mrErr) {
-                console.warn('[API POST /palette] Could not compute region markers:', mrErr);
+                console.warn('[API POST /palette] Could not compute palette region data:', mrErr);
             }
         }
 
         // Update metadata array (swatchLabels: A, B, C, ...)
         allMetadata[imageIndex].colorPalette = extractedPalette;
         allMetadata[imageIndex].swatchLabels = computeSwatchLabels(extractedPalette);
-        allMetadata[imageIndex].clusterMarkers = clusterMarkers;
+        allMetadata[imageIndex].paletteRegion = paletteRegion;
 
         // Rewrite metadata file
         await metadataHandler.rewriteMetadata(allMetadata);
         console.log(`[API POST /palette] Rewritten metadata for ${filename} with new palette.`);
 
-        // Return new palette and markers
-        res.json({ success: true, palette: extractedPalette, clusterMarkers });
+        // Return new palette and region data
+        res.json({ success: true, palette: extractedPalette, paletteRegion });
 
     } catch (error) {
         // Catch errors specifically from palette generation or rewrite
@@ -348,10 +369,10 @@ app.put('/api/palette/:filename', express.json(), async (req, res) => { // Use e
     }
 });
 
-// PUT /api/metadata/:filename - Update specific metadata fields (paletteName, regions)
+// PUT /api/metadata/:filename - Update specific metadata fields (paletteName, regions, regionLabels)
 app.put('/api/metadata/:filename', express.json(), async (req, res) => {
     const filename = req.params.filename;
-    const { paletteName, regions } = req.body;
+    const { paletteName, regions, regionLabels } = req.body;
     console.log(`[API PUT /metadata] Request received for ${filename}`);
 
     if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
@@ -388,22 +409,27 @@ app.put('/api/metadata/:filename', express.json(), async (req, res) => {
     }
     if (regions !== undefined) {
         allMetadata[imageIndex].regions = regions;
-        // Recompute cluster markers when regions change and we have a palette
+        const validLabels = Array.isArray(regionLabels) && regionLabels.length === regions.length &&
+            regionLabels.every(l => typeof l === 'string' && l.length > 0);
+        allMetadata[imageIndex].regionLabels = validLabels
+            ? regionLabels
+            : regions.map((_, i) => String(i).padStart(2, '0'));
+        // Recompute palette region data when regions change and we have a palette
         const palette = allMetadata[imageIndex].colorPalette;
         if (Array.isArray(palette) && palette.length > 0 && regions.length > 0) {
             try {
                 const imagePath = path.join(uploadsDir, filename);
                 if (fs.existsSync(imagePath)) {
-                    allMetadata[imageIndex].clusterMarkers = await imageProcessor.computeRegionColorMarkers(imagePath, regions, palette);
+                    allMetadata[imageIndex].paletteRegion = await imageProcessor.computeRegionColorMarkers(imagePath, regions, palette);
                 } else {
-                    allMetadata[imageIndex].clusterMarkers = [];
+                    allMetadata[imageIndex].paletteRegion = [];
                 }
             } catch (mrErr) {
-                console.warn('[API PUT /metadata] Could not recompute cluster markers:', mrErr);
-                allMetadata[imageIndex].clusterMarkers = [];
+                console.warn('[API PUT /metadata] Could not recompute palette region data:', mrErr);
+                allMetadata[imageIndex].paletteRegion = [];
             }
         } else {
-            allMetadata[imageIndex].clusterMarkers = [];
+            allMetadata[imageIndex].paletteRegion = [];
         }
     }
 
@@ -536,7 +562,10 @@ app.post('/api/images/:filename/duplicate', async (req, res) => {
             swatchLabels: labels,
             paletteName: newPaletteName,
             regions: Array.isArray(sourceMeta.regions) ? JSON.parse(JSON.stringify(sourceMeta.regions)) : [],
-            clusterMarkers: Array.isArray(sourceMeta.clusterMarkers) ? JSON.parse(JSON.stringify(sourceMeta.clusterMarkers)) : []
+            regionLabels: Array.isArray(sourceMeta.regionLabels) && sourceMeta.regionLabels.length === (sourceMeta.regions?.length ?? 0)
+                ? [...sourceMeta.regionLabels]
+                : (Array.isArray(sourceMeta.regions) ? sourceMeta.regions.map((_, i) => String(i).padStart(2, '0')) : []),
+            paletteRegion: JSON.parse(JSON.stringify(getPaletteRegion(sourceMeta)))
         };
 
         // 4. Append (puts at end of file; GET reverses so new item appears at top)

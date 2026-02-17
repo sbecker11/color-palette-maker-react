@@ -70,6 +70,24 @@ describe('PaletteDisplay', () => {
     expect(defaultProps.onDuplicate).toHaveBeenCalledTimes(1);
   });
 
+  it('calls onToggleSamplingMode when Adding swatches toggle is changed', () => {
+    const onToggle = vi.fn();
+    render(<PaletteDisplay {...defaultProps} onToggleSamplingMode={onToggle} />);
+    const toggle = screen.getByRole('checkbox', { name: 'Adding swatches' });
+    fireEvent.click(toggle);
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('Adding swatches toggle is checked when isSamplingMode', () => {
+    render(<PaletteDisplay {...defaultProps} isSamplingMode={true} />);
+    expect(screen.getByRole('checkbox', { name: 'Adding swatches' })).toBeChecked();
+  });
+
+  it('Adding swatches toggle is disabled when no selectedMeta', () => {
+    render(<PaletteDisplay {...defaultProps} selectedMeta={null} />);
+    expect(screen.getByRole('checkbox', { name: 'Adding swatches' })).toBeDisabled();
+  });
+
   it('shows Export option in actions dropdown', () => {
     render(<PaletteDisplay {...defaultProps} />);
     expect(screen.getByRole('option', { name: /export/i })).toBeInTheDocument();
@@ -102,14 +120,14 @@ describe('PaletteDisplay', () => {
 
   it('calls onDeleteSwatch when swatch delete button is clicked', () => {
     render(<PaletteDisplay {...defaultProps} />);
-    const deleteButtons = screen.getAllByTitle('Delete swatch');
+    const deleteButtons = screen.getAllByTitle('Delete palette swatch');
     fireEvent.click(deleteButtons[0]);
     expect(defaultProps.onDeleteSwatch).toHaveBeenCalledWith('#ff0000');
   });
 
   it('calls onToggleSamplingMode when placeholder swatch is clicked', () => {
     render(<PaletteDisplay {...defaultProps} />);
-    const placeholderSwatch = screen.getByTitle(/click to sample color/i);
+    const placeholderSwatch = screen.getByTitle(/click to enter add swatch mode/i);
     fireEvent.click(placeholderSwatch);
     expect(defaultProps.onToggleSamplingMode).toHaveBeenCalledTimes(1);
   });
@@ -117,7 +135,7 @@ describe('PaletteDisplay', () => {
   it('calls onToggleSamplingMode on Enter key on placeholder swatch', () => {
     const onToggle = vi.fn();
     render(<PaletteDisplay {...defaultProps} onToggleSamplingMode={onToggle} />);
-    const placeholderSwatch = screen.getByTitle(/click to sample color/i);
+    const placeholderSwatch = screen.getByTitle(/click to enter add swatch mode/i);
     fireEvent.keyDown(placeholderSwatch, { key: 'Enter' });
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
@@ -125,7 +143,7 @@ describe('PaletteDisplay', () => {
   it('calls onToggleSamplingMode on Space key on placeholder swatch', () => {
     const onToggle = vi.fn();
     render(<PaletteDisplay {...defaultProps} onToggleSamplingMode={onToggle} />);
-    const placeholderSwatch = screen.getByTitle(/click to sample color/i);
+    const placeholderSwatch = screen.getByTitle(/click to enter add swatch mode/i);
     fireEvent.keyDown(placeholderSwatch, { key: ' ' });
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
@@ -157,7 +175,7 @@ describe('PaletteDisplay', () => {
       />
     );
     expect(
-      screen.getByTitle(/double-click image to add #abc123/i)
+      screen.getByTitle(/double-click palette image to add #abc123/i)
     ).toBeInTheDocument();
   });
 

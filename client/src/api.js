@@ -53,10 +53,13 @@ const api = {
   },
 
   async saveMetadata(filename, opts = {}) {
-    const { paletteName, regions } = typeof opts === 'string' ? { paletteName: opts } : opts;
+    const { paletteName, regions, regionLabels } = typeof opts === 'string' ? { paletteName: opts } : opts;
     const body = {};
     if (paletteName !== undefined) body.paletteName = paletteName;
     if (regions !== undefined) body.regions = regions;
+    if (regionLabels !== undefined && Array.isArray(regionLabels) && regionLabels.length === (regions?.length ?? 0)) {
+      body.regionLabels = regionLabels;
+    }
     if (Object.keys(body).length === 0) return { success: false, message: 'Nothing to save.' };
     const response = await fetch(`/api/metadata/${encodeURIComponent(filename)}`, {
       method: 'PUT',
