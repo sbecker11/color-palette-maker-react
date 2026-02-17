@@ -11,5 +11,6 @@ client/coverage-report-*.html
 image_metadata.jsonl
 uploads/
 
-# Large media (hero images hosted in GitHub Releases v1.0.0)
-media/
+# image assets hosted via gh-pages branch
+images/
+
