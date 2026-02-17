@@ -2,10 +2,18 @@
  * API helpers for Color Palette Maker
  */
 
+async function handleResponse(response) {
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    return { success: false, message: data.message || `HTTP ${response.status}` };
+  }
+  return data;
+}
+
 const api = {
   async getImages() {
     const response = await fetch('/api/images');
-    return response.json();
+    return handleResponse(response);
   },
 
   async upload(formData) {
@@ -13,7 +21,7 @@ const api = {
       method: 'POST',
       body: formData,
     });
-    return response.json();
+    return handleResponse(response);
   },
 
   async generatePalette(filename, opts = {}) {
@@ -29,14 +37,14 @@ const api = {
       fetchOpts.body = JSON.stringify({ regions, k, regenerate });
     }
     const response = await fetch(url, fetchOpts);
-    return response.json();
+    return handleResponse(response);
   },
 
   async detectRegions(filename) {
     const response = await fetch(`/api/regions/${encodeURIComponent(filename)}`, {
       method: 'POST',
     });
-    return response.json();
+    return handleResponse(response);
   },
 
   async savePalette(filename, colorPalette, swatchLabels) {
@@ -49,7 +57,7 @@ const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    return response.json();
+    return handleResponse(response);
   },
 
   async saveMetadata(filename, opts = {}) {
@@ -66,21 +74,21 @@ const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    return response.json();
+    return handleResponse(response);
   },
 
   async deleteImage(filename) {
     const response = await fetch(`/api/images/${encodeURIComponent(filename)}`, {
       method: 'DELETE',
     });
-    return response.json();
+    return handleResponse(response);
   },
 
   async duplicateImage(filename) {
     const response = await fetch(`/api/images/${encodeURIComponent(filename)}/duplicate`, {
       method: 'POST',
     });
-    return response.json();
+    return handleResponse(response);
   },
 
   async reorderImages(filenames) {
@@ -89,7 +97,7 @@ const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filenames }),
     });
-    return response.json();
+    return handleResponse(response);
   },
 };
 

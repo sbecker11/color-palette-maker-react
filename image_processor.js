@@ -32,18 +32,6 @@ function minPairwiseColorDistance(centroidsRgb) {
     return minD === Infinity ? null : minD;
 }
 
-// // Define pure black and white for seeding and filtering (REMOVED)
-// const PURE_BLACK_RGB = [0, 0, 0];
-// const PURE_WHITE_RGB = [255, 255, 255];
-
-// // Calculates the Euclidean distance between two RGB colors. (REMOVED)
-// function calculateRgbDistance(rgb1, rgb2) {
-//     const dr = rgb1[0] - rgb2[0];
-//     const dg = rgb1[1] - rgb2[1];
-//     const db = rgb1[2] - rgb2[2];
-//     return Math.sqrt(dr*dr + dg*dg + db*db);
-// }
-
 /**
  * Calculates the perceived luminance of an RGB color.
  * Uses the standard formula for relative luminance.

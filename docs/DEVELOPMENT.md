@@ -192,25 +192,39 @@ CI must pass before merging pull requests.
 
 ```
 color-palette-maker-react/
-├── client/                 # React frontend (Vite)
+├── .github/workflows/ci.yml
+├── client/                 # React frontend (Vite 5)
 │   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── api.js         # API client
-│   │   ├── utils.js       # Helper functions
-│   │   ├── imageViewerGeometry.js  # Polygon helpers (centroid, shrink, path)
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── vite.config.js
-│   └── package.json
-├── server.js              # Express server
-├── metadata_handler.js    # Image metadata (JSONL)
-├── image_processor.js     # K-means palette generation
-├── docs/                  # Documentation
-├── scripts/detect_regions.py  # Python/OpenCV region detection
-├── requirements.txt       # Python deps (opencv-python, numpy)
-├── uploads/               # Uploaded images
+│   │   ├── components/     # Header, ImageLibrary, PaletteDisplay, ImageViewer, UploadForm, MetadataDisplay (+ .test.jsx)
+│   │   ├── test/setup.js
+│   │   ├── api.js, api.test.js
+│   │   ├── utils.js, utils.test.js
+│   │   ├── imageViewerGeometry.js, imageViewerGeometry.test.js
+│   │   ├── App.jsx, App.css, App.test.jsx
+│   │   ├── AppHelpers.js, AppHelpers.test.js
+│   │   ├── main.jsx, index.css
+│   │   ├── metadata_handler.test.js, image_processor.test.js  # Server module tests (Vitest)
+│   │   └── assets/
+│   ├── scripts/            # Coverage reporters, save-coverage-report.js
+│   ├── vite.config.js, eslint.config.js
+│   ├── index.html, package.json
+│   └── public/
+├── docs/                   # USER_GUIDE, API, ARCHITECTURE, DEVELOPMENT, FUTURE-WORK, migration outlines
+├── media/                  # README hero assets (gold.png, gold-blue.gif)
+├── scripts/
+│   ├── detect_regions.py   # Python/OpenCV region detection
+│   ├── run-with-venv.js    # Activates venv before starting server
+│   └── kill-port-3000-listeners
+├── server.js               # Express server
+├── metadata_handler.js     # Image metadata (JSONL)
+├── image_processor.js      # K-means palette generation
+├── requirements.txt        # Python deps (opencv-python, numpy)
+├── Dockerfile, .dockerignore, .env.example
+├── uploads/                # Uploaded images (runtime)
 └── package.json
 ```
+
+To regenerate a file tree from the repo: from the project root run `find . -not -path './node_modules*' -not -path './.git*' -not -path './venv*' -not -path './client/dist*' -not -path './client/coverage*' | sort`, or use a tool like `tree` (if installed: `tree -I 'node_modules|.git|venv|dist|coverage'`).
 
 ---
 

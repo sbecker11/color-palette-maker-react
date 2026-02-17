@@ -10,7 +10,7 @@ detect image regions with OpenCV, and export palettes as JSON.
 
 ## Tech Stack
 
-- **Frontend**: React 19, Vite 7
+- **Frontend**: React 19, Vite 5
 - **Backend**: Node.js, Express
 - **Image Processing**: Sharp, node-kmeans, get-pixels, color-diff (CIEDE2000)
 - **Region Detection**: Python 3, OpenCV, NumPy
@@ -41,7 +41,7 @@ pip install -r requirements.txt
 | [API Reference](docs/API.md) | REST endpoints, request/response formats |
 | [Architecture](docs/ARCHITECTURE.md) | Region & palette pipeline, data flow, storage format |
 | [Development](docs/DEVELOPMENT.md) | Setup, build, test, Docker, project structure |
-| [Action Items](ACTIONS.md) | Improvement backlog from code review |
+| [Future Work](docs/FUTURE-WORK.md) | Improvement backlog, SPA/SaaS migration outlines |
 | [Single-User SPA → Docker Compose](docs/Single-User-SPA-DockerCompose-migration.md) | Multi-service orchestration outline |
 | [Multi-User SaaS → Kubernetes](docs/Multi-User-SaaS-Kubenetes-migration.md) | Kubernetes migration outline |
 

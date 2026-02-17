@@ -56,7 +56,6 @@ function ImageLibrary({
             <li
               key={filename}
               className={isSelected ? 'selected-image' : ''}
-              data-metadata={JSON.stringify(meta)}
             >
               <span className="library-item-top-bottom">
                 <button

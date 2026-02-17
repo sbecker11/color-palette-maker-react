@@ -4,7 +4,7 @@
 
 export function getFilenameFromMeta(meta) {
   if (!meta?.cachedFilePath) return null;
-  return meta.cachedFilePath.split('/').pop();
+  return meta.cachedFilePath.split(/[/\\]/).pop();
 }
 
 export function getFilenameWithoutExt(filename) {

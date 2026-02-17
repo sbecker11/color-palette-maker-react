@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useReducer } from 'react';
 import api from './api';
 import { getFilenameFromMeta, getFilenameWithoutExt } from './utils';
 import {
@@ -23,6 +23,22 @@ import PaletteDisplay from './components/PaletteDisplay';
 import ImageViewer from './components/ImageViewer';
 import './App.css';
 
+const initialRegionsState = { regions: [], isDeleteRegionMode: false, regionsDetecting: false };
+function regionsReducer(state, action) {
+  switch (action.type) {
+    case 'SET_REGIONS':
+      return { ...state, regions: action.payload };
+    case 'SET_DELETE_MODE':
+      return { ...state, isDeleteRegionMode: action.payload };
+    case 'SET_DETECTING':
+      return { ...state, regionsDetecting: action.payload };
+    case 'REMOVE_REGION':
+      return { ...state, regions: state.regions.filter((_, i) => i !== action.payload) };
+    default:
+      return state;
+  }
+}
+
 function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const [images, setImages] = useState([]);
@@ -34,9 +50,8 @@ function App() {
   const [paletteName, setPaletteName] = useState('');
   const [isSamplingMode, setIsSamplingMode] = useState(false);
   const [currentSampledColor, setCurrentSampledColor] = useState(null);
-  const [regions, setRegions] = useState([]);
-  const [isDeleteRegionMode, setIsDeleteRegionMode] = useState(false);
-  const [regionsDetecting, setRegionsDetecting] = useState(false);
+  const [regionsState, dispatchRegions] = useReducer(regionsReducer, initialRegionsState);
+  const { regions, isDeleteRegionMode, regionsDetecting } = regionsState;
   const [showMatchPaletteSwatches, setShowMatchPaletteSwatches] = useState(false);
   // One palette swatch may map to zero or more overlays (sync highlight between panel swatch and image overlays)
   const [hoveredSwatchIndex, setHoveredSwatchIndex] = useState(null);
@@ -74,7 +89,7 @@ function App() {
             setSelectedMeta(first);
             setSelectedImageUrl(`/uploads/${encodeURIComponent(filename)}`);
             setPaletteName(first.paletteName || getFilenameWithoutExt(filename));
-            setRegions(Array.isArray(first.regions) ? first.regions : []);
+            dispatchRegions({ type: 'SET_REGIONS', payload: Array.isArray(first.regions) ? first.regions : [] });
             if (needsPaletteGeneration(first)) {
               setPaletteGenerating(true);
               api
@@ -130,11 +145,11 @@ function App() {
   const handleSelectImage = useCallback((meta, imageUrl) => {
     setIsSamplingMode(false);
     setCurrentSampledColor(null);
-    setIsDeleteRegionMode(false);
+    dispatchRegions({ type: 'SET_DELETE_MODE', payload: false });
     setSelectedMeta(meta);
     setSelectedImageUrl(imageUrl);
     setPaletteName(meta.paletteName || getFilenameWithoutExt(getFilenameFromMeta(meta) || ''));
-    setRegions(Array.isArray(meta.regions) ? meta.regions : []);
+    dispatchRegions({ type: 'SET_REGIONS', payload: Array.isArray(meta.regions) ? meta.regions : [] });
 
     if (needsPaletteGeneration(meta)) {
       const filename = getFilenameFromMeta(meta);
@@ -432,13 +447,13 @@ function App() {
     }
     const filename = getFilenameFromMeta(selectedMeta);
     if (!filename) return;
-    setRegionsDetecting(true);
+    dispatchRegions({ type: 'SET_DETECTING', payload: true });
     try {
       const result = await api.detectRegions(filename);
       if (result.success && result.regions) {
         const newRegions = result.regions;
         const newPaletteRegions = Array.isArray(result.paletteRegion) ? result.paletteRegion : [];
-        setRegions(newRegions);
+        dispatchRegions({ type: 'SET_REGIONS', payload: newRegions });
         setSelectedMeta((prev) =>
           prev ? { ...applyRegionsToMeta(prev, newRegions), paletteRegion: newPaletteRegions } : prev
         );
@@ -449,7 +464,7 @@ function App() {
               : m
           )
         );
-        setIsDeleteRegionMode(true);
+        dispatchRegions({ type: 'SET_DELETE_MODE', payload: true });
         showMessage(`Detected ${newRegions.length} region(s). Saved. Click to remove unwanted; click outside to exit.`);
       } else {
         showMessage(result.message || result.error || 'Region detection failed.', true);
@@ -457,7 +472,7 @@ function App() {
     } catch {
       showMessage('Region detection failed. Region detection requires Python 3 with opencv-python and numpy. Ensure Installation (step 3) is complete.', true);
     } finally {
-      setRegionsDetecting(false);
+      dispatchRegions({ type: 'SET_DETECTING', payload: false });
     }
   }, [selectedMeta, showMessage]);
 
@@ -467,7 +482,7 @@ function App() {
     if (!filename) return;
     const emptyRegions = [];
     const emptyPaletteRegions = [];
-    setRegions(emptyRegions);
+    dispatchRegions({ type: 'SET_REGIONS', payload: emptyRegions });
     setSelectedMeta((prev) => (prev ? { ...applyRegionsToMeta(prev, emptyRegions), paletteRegion: emptyPaletteRegions } : prev));
     setImages((prev) =>
       prev.map((m) =>
@@ -476,7 +491,7 @@ function App() {
           : m
       )
     );
-    setIsDeleteRegionMode(false);
+    dispatchRegions({ type: 'SET_DELETE_MODE', payload: false });
     try {
       await api.saveMetadata(filename, { regions: emptyRegions, regionLabels: [] });
       showMessage('Regions cleared.');
@@ -493,7 +508,7 @@ function App() {
     const paletteRegions = selectedMeta?.paletteRegion ?? [];
     const updatedPaletteRegions = (Array.isArray(paletteRegions) ? paletteRegions : []).filter((_, i) => i !== index);
     const updatedLabels = computeRegionLabels(updated);
-    setRegions(updated);
+    dispatchRegions({ type: 'REMOVE_REGION', payload: index });
     setSelectedMeta((prev) => (prev ? { ...applyRegionsToMeta(prev, updated), paletteRegion: updatedPaletteRegions } : prev));
     setImages((prev) =>
       prev.map((m) =>
@@ -508,12 +523,12 @@ function App() {
   }, [selectedMeta, regions, showMessage]);
 
   const handleEnterDeleteRegionMode = useCallback(() => {
-    setIsDeleteRegionMode(true);
+    dispatchRegions({ type: 'SET_DELETE_MODE', payload: true });
     showMessage('Click a region boundary to remove it; click outside to exit.');
   }, [showMessage]);
 
   const handleExitDeleteRegionMode = useCallback(() => {
-    setIsDeleteRegionMode(false);
+    dispatchRegions({ type: 'SET_DELETE_MODE', payload: false });
   }, []);
 
   const palette = selectedMeta?.colorPalette;

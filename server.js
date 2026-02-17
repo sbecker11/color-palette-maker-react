@@ -52,6 +52,12 @@ function getRegionDetectionPython() {
     return 'python3';
 }
 
+/** Returns true if filename is safe (no path traversal or path separators). */
+function validateFilename(filename) {
+    return typeof filename === 'string' && filename.length > 0
+        && !filename.includes('..') && !filename.includes('/') && !filename.includes('\\');
+}
+
 // Ensure uploads directory exists (using async fs)
 async function ensureUploadsDir() {
     try {
@@ -73,10 +79,9 @@ const upload = multer({
 // --- Middleware ---
 // Serve static files from the 'uploads' directory
 app.use('/uploads', express.static(uploadsDir));
-// Serve static files from the React build (client/dist) or fallback to frontend for backwards compat
+// Serve static files from the React build (client/dist)
 const frontendDir = path.join(__dirname, 'client', 'dist');
-const legacyFrontendDir = path.join(__dirname, 'frontend');
-app.use(express.static(fs.existsSync(frontendDir) ? frontendDir : legacyFrontendDir));
+app.use(express.static(frontendDir));
 
 // --- API Routes ---
 
@@ -180,7 +185,7 @@ app.post('/upload', upload.single('imageFile'), async (req, res) => {
 // POST /api/regions/:filename - Detect regions using Python subprocess
 app.post('/api/regions/:filename', async (req, res) => {
     const filename = req.params.filename;
-    if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    if (!validateFilename(filename)) {
         return res.status(400).json({ success: false, message: 'Invalid filename.' });
     }
     const imagePath = path.join(uploadsDir, filename);
@@ -252,7 +257,7 @@ app.post('/api/palette/:filename', express.json(), async (req, res) => {
     const filename = req.params.filename;
     console.log(`[API POST /palette] Request received for filename: ${filename}`);
 
-    if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    if (!validateFilename(filename)) {
         return res.status(400).json({ success: false, message: 'Invalid filename.' });
     }
 
@@ -328,7 +333,7 @@ app.put('/api/palette/:filename', express.json(), async (req, res) => { // Use e
     const swatchLabels = req.body.swatchLabels;
     console.log(`[API PUT /palette] Request received for ${filename}`);
 
-    if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    if (!validateFilename(filename)) {
         return res.status(400).json({ success: false, message: 'Invalid filename.' });
     }
     // Basic validation for the received palette
@@ -375,7 +380,7 @@ app.put('/api/metadata/:filename', express.json(), async (req, res) => {
     const { paletteName, regions, regionLabels } = req.body;
     console.log(`[API PUT /metadata] Request received for ${filename}`);
 
-    if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    if (!validateFilename(filename)) {
         return res.status(400).json({ success: false, message: 'Invalid filename.' });
     }
     if (paletteName !== undefined) {
@@ -454,7 +459,7 @@ app.put('/api/images/order', express.json(), async (req, res) => {
 
     // Validate each filename
     for (const fn of filenames) {
-        if (typeof fn !== 'string' || fn.includes('..') || fn.includes('/') || fn.includes('\\')) {
+        if (!validateFilename(fn)) {
             return res.status(400).json({ success: false, message: 'Invalid filename in order list.' });
         }
     }
@@ -501,7 +506,7 @@ app.post('/api/images/:filename/duplicate', async (req, res) => {
     const filename = req.params.filename;
     console.log(`[API POST /images/duplicate] Request received for filename: ${filename}`);
 
-    if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    if (!validateFilename(filename)) {
         return res.status(400).json({ success: false, message: 'Invalid filename.' });
     }
 
@@ -585,7 +590,7 @@ app.delete('/api/images/:filename', async (req, res) => {
     const filenameToDelete = req.params.filename;
     console.log(`[API DELETE /images] Request received for filename: ${filenameToDelete}`);
 
-    if (!filenameToDelete || filenameToDelete.includes('..') || filenameToDelete.includes('/') || filenameToDelete.includes('\\')) {
+    if (!validateFilename(filenameToDelete)) {
         return res.status(400).json({ success: false, message: 'Invalid filename.' });
     }
 
@@ -640,10 +645,7 @@ app.delete('/api/images/:filename', async (req, res) => {
 
 // --- Root Route to serve frontend ---
 app.get('/', (req, res) => {
-    const indexPath = path.join(frontendDir, 'index.html');
-    const legacyPath = path.join(legacyFrontendDir, 'index.html');
-    const htmlPath = fs.existsSync(indexPath) ? indexPath : legacyPath;
-    res.sendFile(htmlPath);
+    res.sendFile(path.join(frontendDir, 'index.html'));
 });
 
 // --- Server Start Logic with Port Check ---

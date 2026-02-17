@@ -14,7 +14,6 @@ export default defineConfig({
       exclude: [
         'scripts/**',
         'src/main.jsx',
-        'src/components/ImageViewer.jsx',
         '**/node_modules/**',
         '**/*.test.{js,jsx,ts,tsx}',
         '**/vite.config.*',
