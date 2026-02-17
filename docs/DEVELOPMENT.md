@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Node.js 18+** (20.19+ or 22.12+ recommended for Vite 7)
+- **Node.js 18+** (20.19+ or 22.12+ recommended for Vite 5)
 - **npm**
 - **Python 3** with `opencv-python` and `numpy` — required for region detection. Use a virtual environment (recommended) or system Python. Override with `DETECT_REGIONS_PYTHON=/path/to/python` if needed.
 

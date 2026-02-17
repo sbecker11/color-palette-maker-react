@@ -43,7 +43,7 @@ pip install -r requirements.txt
 | [Development](docs/DEVELOPMENT.md) | Setup, build, test, Docker, project structure |
 | [Future Work](docs/FUTURE-WORK.md) | Improvement backlog, SPA/SaaS migration outlines |
 | [Single-User SPA → Docker Compose](docs/Single-User-SPA-DockerCompose-migration.md) | Multi-service orchestration outline |
-| [Multi-User SaaS → Kubernetes](docs/Multi-User-SaaS-Kubenetes-migration.md) | Kubernetes migration outline |
+| [Multi-User SaaS → Kubernetes](docs/Multi-User-SaaS-Kubernetes-migration.md) | Kubernetes migration outline |
 
 ## License
 

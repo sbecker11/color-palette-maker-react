@@ -68,4 +68,4 @@ Migrate to a multi-user SaaS on Kubernetes: add auth, PostgreSQL, object storage
 - Per-user data isolation; rate limits; quotas.
 - K8s manifests: deployments, services, ingress (TLS), ConfigMaps, Secrets, HPA for backend and image-processor.
 
-See [Multi-User-SaaS-Kubenetes-migration.md](Multi-User-SaaS-Kubenetes-migration.md) for prerequisites, implementation order, and manifest summary.
+See [Multi-User-SaaS-Kubernetes-migration.md](Multi-User-SaaS-Kubernetes-migration.md) for prerequisites, implementation order, and manifest summary.
