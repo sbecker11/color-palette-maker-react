@@ -458,6 +458,11 @@ input[type="file"] {
   border: 1px solid var(--border-color);
   display: inline-block;
 }
+/* Swatch fill - !important overrides Dark Reader and other extensions */
+.palette-swatch-wrapper .palette-swatch.palette-swatch-filled {
+  background: var(--swatch-color) !important;
+  background-color: var(--swatch-color) !important;
+}
 .palette-swatch.highlighted {
   filter: drop-shadow(0 0 8px rgba(255, 255, 100, 0.9)) drop-shadow(0 0 16px rgba(255, 220, 80, 0.6));
 }

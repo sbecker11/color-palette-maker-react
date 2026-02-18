@@ -10,6 +10,7 @@ describe('PaletteDisplay', () => {
     currentSampledColor: null,
     onToggleSamplingMode: vi.fn(),
     onDeleteSwatch: vi.fn(),
+    onClearAllSwatches: vi.fn(),
     paletteName: 'Test Palette',
     onPaletteNameChange: vi.fn(),
     onExport: vi.fn(),
@@ -41,9 +42,9 @@ describe('PaletteDisplay', () => {
     render(<PaletteDisplay {...defaultProps} />);
     const select = screen.getByRole('combobox', { name: 'Choose action' });
     expect(select).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /k-means \(5\)/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /k-means \(7\)/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /k-means \(9\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /find k-means swatches \(5\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /find k-means swatches \(7\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /find k-means swatches \(9\)/i })).toBeInTheDocument();
   });
 
   it('calls onRegenerateWithK when K-means (7) is selected', () => {
@@ -53,13 +54,11 @@ describe('PaletteDisplay', () => {
     expect(defaultProps.onRegenerateWithK).toHaveBeenCalledWith(7);
   });
 
-  it('shows (Del)ete and (Dup)licate at top of actions dropdown', () => {
+  it('shows Rename Palette, (Dup)licate Palette, (Del)ete Palette in actions dropdown', () => {
     render(<PaletteDisplay {...defaultProps} />);
-    expect(screen.getByRole('option', { name: '(Del)ete' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: '(Dup)licate' })).toBeInTheDocument();
-    const options = screen.getAllByRole('option');
-    expect(options[1]).toHaveTextContent('(Del)ete');
-    expect(options[2]).toHaveTextContent('(Dup)licate');
+    expect(screen.getByRole('option', { name: 'Rename Palette' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '(Dup)licate Palette' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '(Del)ete Palette' })).toBeInTheDocument();
   });
 
   it('calls onDelete when (Del)ete is selected from dropdown', () => {
@@ -94,9 +93,9 @@ describe('PaletteDisplay', () => {
     expect(screen.getByRole('checkbox', { name: 'Adding swatches' })).toBeDisabled();
   });
 
-  it('shows Export option in actions dropdown', () => {
+  it('shows Export Palette option in actions dropdown', () => {
     render(<PaletteDisplay {...defaultProps} />);
-    expect(screen.getByRole('option', { name: /export/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /export palette/i })).toBeInTheDocument();
   });
 
   it('calls onExport when Export is selected from dropdown', () => {
@@ -195,7 +194,7 @@ describe('PaletteDisplay', () => {
     expect(screen.getByRole('combobox', { name: 'Choose action' })).toBeDisabled();
   });
 
-  it('calls onDetectRegions when Detect Regions is selected', () => {
+  it('calls onDetectRegions when Detect all Regions is selected', () => {
     render(<PaletteDisplay {...defaultProps} />);
     const select = screen.getByRole('combobox', { name: 'Choose action' });
     fireEvent.change(select, { target: { value: 'detectRegions' } });
@@ -209,21 +208,21 @@ describe('PaletteDisplay', () => {
     expect(defaultProps.onDeleteRegions).toHaveBeenCalledTimes(1);
   });
 
-  it('calls onEnterDeleteRegionMode when Remove Region (click) is selected', () => {
+  it('calls onEnterDeleteRegionMode when Deleting Regions (click) is selected', () => {
     render(<PaletteDisplay {...defaultProps} hasRegions={true} />);
     const select = screen.getByRole('combobox', { name: 'Choose action' });
     fireEvent.change(select, { target: { value: 'enterDeleteRegionMode' } });
     expect(defaultProps.onEnterDeleteRegionMode).toHaveBeenCalledTimes(1);
   });
 
-  it('calls onRegenerateWithK(5) when K-means (5) is selected', () => {
+  it('calls onRegenerateWithK(5) when Find K-Means Swatches (5) is selected', () => {
     render(<PaletteDisplay {...defaultProps} />);
     const select = screen.getByRole('combobox', { name: 'Choose action' });
     fireEvent.change(select, { target: { value: 'kmeans5' } });
     expect(defaultProps.onRegenerateWithK).toHaveBeenCalledWith(5);
   });
 
-  it('calls onRegenerateWithK(9) when K-means (9) is selected', () => {
+  it('calls onRegenerateWithK(9) when Find K-Means Swatches (9) is selected', () => {
     render(<PaletteDisplay {...defaultProps} />);
     const select = screen.getByRole('combobox', { name: 'Choose action' });
     fireEvent.change(select, { target: { value: 'kmeans9' } });
@@ -234,6 +233,32 @@ describe('PaletteDisplay', () => {
     render(<PaletteDisplay {...defaultProps} hoveredSwatchIndex={0} />);
     const swatch = document.querySelector('.palette-swatch.highlighted');
     expect(swatch).toBeInTheDocument();
+  });
+
+  it('focuses and selects palette name input when Rename Palette is selected', () => {
+    render(<PaletteDisplay {...defaultProps} />);
+    const input = screen.getByLabelText(/name/i);
+    input.focus = vi.fn();
+    input.select = vi.fn();
+    const select = screen.getByRole('combobox', { name: 'Choose action' });
+    fireEvent.change(select, { target: { value: 'rename' } });
+    expect(input.focus).toHaveBeenCalled();
+    expect(input.select).toHaveBeenCalled();
+  });
+
+  it('calls onToggleSamplingMode when Adding Swatches (click) is selected (same as empty swatch)', () => {
+    defaultProps.onToggleSamplingMode.mockClear();
+    render(<PaletteDisplay {...defaultProps} />);
+    const select = screen.getByRole('combobox', { name: 'Choose action' });
+    fireEvent.change(select, { target: { value: 'enterAddingSwatches' } });
+    expect(defaultProps.onToggleSamplingMode).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onClearAllSwatches when Clear all Swatches is selected', () => {
+    render(<PaletteDisplay {...defaultProps} />);
+    const select = screen.getByRole('combobox', { name: 'Choose action' });
+    fireEvent.change(select, { target: { value: 'clearSwatches' } });
+    expect(defaultProps.onClearAllSwatches).toHaveBeenCalledTimes(1);
   });
 
   it('calls onSwatchHover on mouse enter and leave', () => {

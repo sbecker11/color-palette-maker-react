@@ -60,7 +60,7 @@ describe('ImageViewer', () => {
     expect(img).toHaveAttribute('src', '/uploads/test.jpg');
   });
 
-  it('calls onDoubleClickAddColor on double-click when in sampling mode', async () => {
+  it('calls onDoubleClickAddColor with sampled hex on double-click when in sampling mode', async () => {
     const onDoubleClickAddColor = vi.fn();
     render(
       <ImageViewer
@@ -70,10 +70,22 @@ describe('ImageViewer', () => {
         onDoubleClickAddColor={onDoubleClickAddColor}
       />
     );
+    await waitFor(() => {
+      const canvas = document.querySelector('#imageCanvas');
+      expect(canvas).toBeInTheDocument();
+      expect(canvas.width).toBe(100);
+    });
+    const img = document.querySelector('#displayedImage');
+    Object.defineProperty(img, 'complete', { value: true, configurable: true });
+    Object.defineProperty(img, 'naturalWidth', { value: 100, configurable: true });
+    Object.defineProperty(img, 'naturalHeight', { value: 80, configurable: true });
+    Object.defineProperty(img, 'clientWidth', { value: 100, configurable: true });
+    Object.defineProperty(img, 'clientHeight', { value: 80, configurable: true });
+    img.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 80 });
+
     const overlay = document.querySelector('.image-viewer-overlay');
-    expect(overlay).toBeInTheDocument();
-    fireEvent.doubleClick(overlay);
-    expect(onDoubleClickAddColor).toHaveBeenCalledTimes(1);
+    fireEvent.doubleClick(overlay, { clientX: 50, clientY: 40 });
+    expect(onDoubleClickAddColor).toHaveBeenCalledWith('#ff0000');
   });
 
   it('does not call onDoubleClickAddColor when not in sampling mode', () => {
@@ -190,6 +202,24 @@ describe('ImageViewer', () => {
     });
     fireEvent.mouseDown(document.body);
     expect(onExitDeleteRegionMode).toHaveBeenCalled();
+  });
+
+  it('calls onExitAddingSwatchesMode when clicking outside viewer in sampling mode', async () => {
+    const onExitAddingSwatchesMode = vi.fn();
+    render(
+      <ImageViewer
+        imageUrl="/uploads/test.jpg"
+        isSamplingMode={true}
+        onSampledColorChange={vi.fn()}
+        onDoubleClickAddColor={vi.fn()}
+        onExitAddingSwatchesMode={onExitAddingSwatchesMode}
+      />
+    );
+    await waitFor(() => {
+      expect(document.querySelector('#imageViewer')).toBeInTheDocument();
+    });
+    fireEvent.mouseDown(document.body);
+    expect(onExitAddingSwatchesMode).toHaveBeenCalled();
   });
 
   it('calls onExitDeleteRegionMode when clicking SVG without region target in delete mode', async () => {

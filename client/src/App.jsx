@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useReducer } from 'react';
+import { useState, useEffect, useCallback, useReducer, useRef } from 'react';
 import api from './api';
 import { getFilenameFromMeta, getFilenameWithoutExt } from './utils';
 import {
@@ -142,7 +142,8 @@ function App() {
     }
   }, [images, selectedMeta]);
 
-  const handleSelectImage = useCallback((meta, imageUrl) => {
+  const handleSelectImage = useCallback((meta, imageUrl, opts = {}) => {
+    const { skipPaletteGeneration = false } = opts;
     setIsSamplingMode(false);
     setCurrentSampledColor(null);
     dispatchRegions({ type: 'SET_DELETE_MODE', payload: false });
@@ -151,7 +152,9 @@ function App() {
     setPaletteName(meta.paletteName || getFilenameWithoutExt(getFilenameFromMeta(meta) || ''));
     dispatchRegions({ type: 'SET_REGIONS', payload: Array.isArray(meta.regions) ? meta.regions : [] });
 
-    if (needsPaletteGeneration(meta)) {
+    if (skipPaletteGeneration || !needsPaletteGeneration(meta)) {
+      setPaletteGenerating(false);
+    } else {
       const filename = getFilenameFromMeta(meta);
       if (filename) {
         setPaletteGenerating(true);
@@ -171,8 +174,6 @@ function App() {
       } else {
         setPaletteGenerating(false);
       }
-    } else {
-      setPaletteGenerating(false);
     }
   }, []);
 
@@ -183,13 +184,15 @@ function App() {
         const result = await api.upload(formData);
         if (result.success) {
           showMessage('Success: Image processed.');
+          await loadImages({ selectFirst: false });
           if (result.metadata) {
             const filename = getFilenameFromMeta(result.metadata);
             if (filename) {
-              handleSelectImage(result.metadata, `/uploads/${encodeURIComponent(filename)}`);
+              handleSelectImage(result.metadata, `/uploads/${encodeURIComponent(filename)}`, {
+                skipPaletteGeneration: true,
+              });
             }
           }
-          await loadImages({ selectFirst: false });
           return result;
         } else {
           showMessage(result.message || 'An error occurred.', true);
@@ -279,6 +282,24 @@ function App() {
     [selectedMeta, showMessage]
   );
 
+  const handleClearAllSwatches = useCallback(async () => {
+    if (!selectedMeta) return;
+    const filename = getFilenameFromMeta(selectedMeta);
+    const newPalette = [];
+    const updatedMeta = applyPaletteToMeta(selectedMeta, newPalette);
+    setSelectedMeta(updatedMeta);
+    setImages((prev) => applyPaletteToImages(prev, filename, newPalette));
+    if (filename) {
+      try {
+        const result = await api.savePalette(filename, newPalette, []);
+        if (!result.success) showMessage(result.message || 'Error clearing palette.', true);
+        else showMessage('All swatches cleared.');
+      } catch {
+        showMessage('Network error clearing palette.', true);
+      }
+    }
+  }, [selectedMeta, showMessage]);
+
   const handleToggleSamplingMode = useCallback(() => {
     if (!selectedMeta) {
       showMessage('Select an image first.', true);
@@ -295,17 +316,25 @@ function App() {
     }
   }, [selectedMeta, isSamplingMode, showMessage]);
 
+  const handleExitAddingSwatchesMode = useCallback(() => {
+    if (isSamplingMode) {
+      setIsSamplingMode(false);
+      setCurrentSampledColor(null);
+      document.body.classList.remove('sampling-active');
+    }
+  }, [isSamplingMode]);
+
   useEffect(() => {
     return () => document.body.classList.remove('sampling-active');
   }, []);
 
-  const handleDoubleClickAddColor = useCallback(() => {
-    if (!isSamplingMode || !currentSampledColor || !selectedMeta) return;
+  const handleDoubleClickAddColor = useCallback((hexColor) => {
+    if (!isSamplingMode || !selectedMeta || !hexColor) return;
 
     const palette = selectedMeta.colorPalette || [];
-    if (palette.includes(currentSampledColor)) return;
+    if (palette.includes(hexColor)) return;
 
-    const newPalette = [...palette, currentSampledColor];
+    const newPalette = [...palette, hexColor];
     const updatedMeta = applyPaletteToMeta(selectedMeta, newPalette);
     const filename = getFilenameFromMeta(selectedMeta);
     setSelectedMeta(updatedMeta);
@@ -317,7 +346,7 @@ function App() {
         showMessage('Error saving palette.', true);
       });
     }
-  }, [isSamplingMode, currentSampledColor, selectedMeta, showMessage]);
+  }, [isSamplingMode, selectedMeta, showMessage]);
 
   const handlePaletteNameBlur = useCallback(() => {
     if (!shouldSavePaletteName(selectedMeta, paletteName)) return;
@@ -531,6 +560,7 @@ function App() {
     dispatchRegions({ type: 'SET_DELETE_MODE', payload: false });
   }, []);
 
+  const palettePanelRef = useRef(null);
   const palette = selectedMeta?.colorPalette;
   const swatchLabels = selectedMeta?.swatchLabels &&
     Array.isArray(selectedMeta.swatchLabels) &&
@@ -556,6 +586,7 @@ function App() {
           />
         </div>
         <PaletteDisplay
+          palettePanelRef={palettePanelRef}
           palette={palette}
           swatchLabels={swatchLabels}
           isGenerating={paletteGenerating}
@@ -563,6 +594,7 @@ function App() {
           currentSampledColor={currentSampledColor}
           onToggleSamplingMode={handleToggleSamplingMode}
           onDeleteSwatch={handleDeleteSwatch}
+          onClearAllSwatches={handleClearAllSwatches}
           paletteName={paletteName}
           onPaletteNameChange={setPaletteName}
           onExport={handleExport}
@@ -582,11 +614,13 @@ function App() {
           onSwatchHover={setHoveredSwatchIndex}
         />
         <ImageViewer
+          palettePanelRef={palettePanelRef}
           imageUrl={selectedImageUrl}
           imageAlt={paletteName || (selectedMeta ? getFilenameWithoutExt(getFilenameFromMeta(selectedMeta)) : null)}
           isSamplingMode={isSamplingMode}
           onSampledColorChange={setCurrentSampledColor}
           onDoubleClickAddColor={handleDoubleClickAddColor}
+          onExitAddingSwatchesMode={handleExitAddingSwatchesMode}
           regions={regions}
           paletteRegion={selectedMeta?.paletteRegion}
           regionLabels={

@@ -8,6 +8,8 @@ function ImageViewer({
   isSamplingMode,
   onSampledColorChange,
   onDoubleClickAddColor,
+  onExitAddingSwatchesMode,
+  palettePanelRef,
   regions = [],
   paletteRegion = [],
   regionLabels = [],
@@ -37,6 +39,18 @@ function ImageViewer({
     document.addEventListener('mousedown', handleDocClick);
     return () => document.removeEventListener('mousedown', handleDocClick);
   }, [isDeleteRegionMode, onExitDeleteRegionMode]);
+
+  useEffect(() => {
+    if (!isSamplingMode) return;
+    const handleDocClick = (e) => {
+      if (!viewerRef.current) return;
+      if (viewerRef.current.contains(e.target)) return;
+      if (palettePanelRef?.current?.contains(e.target)) return;
+      onExitAddingSwatchesMode?.();
+    };
+    document.addEventListener('mousedown', handleDocClick, true);
+    return () => document.removeEventListener('mousedown', handleDocClick, true);
+  }, [isSamplingMode, onExitAddingSwatchesMode, palettePanelRef]);
 
   // Draw image to hidden canvas when imageUrl changes
   useEffect(() => {
@@ -81,33 +95,30 @@ function ImageViewer({
       return null;
     }
 
-    const imgRect = imgElement.getBoundingClientRect();
+    const rect = imgElement.getBoundingClientRect();
     const canvasWidth = canvas.width;
     const canvasHeight = canvas.height;
-    const imgDispWidth = imgElement.clientWidth;
-    const imgDispHeight = imgElement.clientHeight;
+    const elemWidth = rect.width;
+    const elemHeight = rect.height;
 
-    const mouseX = event.clientX - imgRect.left;
-    const mouseY = event.clientY - imgRect.top;
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
 
-    const canvasRatio = canvasWidth / canvasHeight;
-    const imgDispRatio = imgDispWidth / imgDispHeight;
-    let scale = 1;
-    let offsetX = 0;
-    let offsetY = 0;
+    const scale = Math.min(elemWidth / canvasWidth, elemHeight / canvasHeight);
+    const displayedWidth = canvasWidth * scale;
+    const displayedHeight = canvasHeight * scale;
+    const offsetX = (elemWidth - displayedWidth) / 2;
+    const offsetY = 0;
 
-    if (canvasRatio > imgDispRatio) {
-      scale = canvasHeight / imgDispHeight;
-      const scaledWidth = canvasWidth / scale;
-      offsetX = (scaledWidth - imgDispWidth) / 2;
-    } else {
-      scale = canvasWidth / imgDispWidth;
-      const scaledHeight = canvasHeight / scale;
-      offsetY = (scaledHeight - imgDispHeight) / 2;
+    const imgX = mouseX - offsetX;
+    const imgY = mouseY - offsetY;
+
+    if (imgX < -1 || imgX > displayedWidth + 1 || imgY < -1 || imgY > displayedHeight + 1) {
+      return null;
     }
 
-    const canvasX = Math.floor((mouseX + offsetX) * scale);
-    const canvasY = Math.floor((mouseY + offsetY) * scale);
+    const canvasX = Math.floor(imgX / scale);
+    const canvasY = Math.floor(imgY / scale);
 
     const x = Math.max(0, Math.min(canvasX, canvasWidth - 1));
     const y = Math.max(0, Math.min(canvasY, canvasHeight - 1));
@@ -146,7 +157,23 @@ function ImageViewer({
     event.preventDefault();
     event.stopPropagation();
     if (!isSamplingMode) return;
-    onDoubleClickAddColor?.();
+
+    const coords = getCanvasCoords(event);
+    if (!coords) return;
+
+    const ctx = canvasCtxRef.current;
+    if (!ctx) return;
+
+    try {
+      const pixelData = ctx.getImageData(coords.x, coords.y, 1, 1).data;
+      const r = pixelData[0];
+      const g = pixelData[1];
+      const b = pixelData[2];
+      const hex = rgbToHex(r, g, b).toLowerCase();
+      onDoubleClickAddColor?.(hex);
+    } catch {
+      // ignore (e.g. CORS-tainted canvas)
+    }
   };
 
   const hasImage = !!imageUrl;
@@ -188,7 +215,11 @@ function ImageViewer({
                 viewBox={`0 0 ${imageSize.w} ${imageSize.h}`}
                 preserveAspectRatio="xMidYMin meet"
                 style={{
-                  pointerEvents: regions?.length > 0 || paletteRegion?.length > 0 ? 'auto' : 'none',
+                  pointerEvents: isSamplingMode
+                    ? 'none'
+                    : regions?.length > 0 || paletteRegion?.length > 0
+                      ? 'auto'
+                      : 'none',
                   cursor: isDeleteRegionMode ? 'crosshair' : 'default',
                 }}
                 onClick={(e) => {

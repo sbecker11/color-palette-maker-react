@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import MetadataDisplay from './MetadataDisplay';
 
 function PaletteDisplay({
@@ -9,6 +9,7 @@ function PaletteDisplay({
   currentSampledColor,
   onToggleSamplingMode,
   onDeleteSwatch,
+  onClearAllSwatches,
   paletteName,
   onPaletteNameChange,
   onExport,
@@ -26,17 +27,20 @@ function PaletteDisplay({
   onShowMatchPaletteSwatchesChange,
   hoveredSwatchIndex = null,
   onSwatchHover,
+  palettePanelRef,
 }) {
   const [actionSelect, setActionSelect] = useState('');
+  const paletteNameInputRef = useRef(null);
   const hasPalette = palette && Array.isArray(palette) && palette.length > 0;
   const showPlaceholder = !isGenerating && !hasPalette;
 
   return (
-    <div id="middlePanel">
+    <div id="middlePanel" ref={palettePanelRef}>
       <h2>Color Palette</h2>
       <div id="paletteNameRow">
         <label htmlFor="paletteNameInput">Name:</label>
         <input
+          ref={paletteNameInputRef}
           type="text"
           id="paletteNameInput"
           name="paletteNameInput"
@@ -52,11 +56,17 @@ function PaletteDisplay({
           <span className="placeholder">Generating palette...</span>
         )}
         {!isGenerating && hasPalette && palette.map((hexColor, idx) => (
-          <div key={hexColor} className="palette-item">
-            <div className="palette-swatch-wrapper">
+          <div key={`${idx}-${String(hexColor)}`} className="palette-item">
+            <div
+              className="palette-swatch-wrapper"
+              style={{ '--swatch-color': hexColor, colorScheme: 'light' }}
+            >
               <div
-                className={`palette-swatch ${hoveredSwatchIndex === idx ? 'highlighted' : ''}`}
-                style={{ backgroundColor: hexColor }}
+                className={`palette-swatch palette-swatch-filled ${hoveredSwatchIndex === idx ? 'highlighted' : ''}`}
+                style={{
+                  backgroundColor: hexColor,
+                  boxShadow: `inset 0 0 0 50px ${hexColor}`,
+                }}
                 title={hexColor}
                 onMouseEnter={() => onSwatchHover?.(idx)}
                 onMouseLeave={() => onSwatchHover?.(null)}
@@ -149,28 +159,38 @@ function PaletteDisplay({
           onChange={(e) => {
             const v = e.target.value;
             setActionSelect('');
-            if (v === 'delete') onDelete?.();
+            if (v === 'rename') {
+              paletteNameInputRef.current?.focus();
+              paletteNameInputRef.current?.select();
+            } else if (v === 'delete') onDelete?.();
             else if (v === 'duplicate') onDuplicate?.();
-            else if (v === 'detectRegions') onDetectRegions?.();
-            else if (v === 'deleteRegions') onDeleteRegions?.();
-            else if (v === 'enterDeleteRegionMode') onEnterDeleteRegionMode?.();
+            else if (v === 'export') onExport?.();
             else if (v === 'kmeans5') onRegenerateWithK?.(5);
             else if (v === 'kmeans7') onRegenerateWithK?.(7);
             else if (v === 'kmeans9') onRegenerateWithK?.(9);
-            else if (v === 'export') onExport?.();
+            else if (v === 'enterAddingSwatches') onToggleSamplingMode?.();
+            else if (v === 'clearSwatches') onClearAllSwatches?.();
+            else if (v === 'detectRegions') onDetectRegions?.();
+            else if (v === 'enterDeleteRegionMode') onEnterDeleteRegionMode?.();
+            else if (v === 'deleteRegions') onDeleteRegions?.();
           }}
           disabled={!selectedMeta || isGenerating || regionsDetecting}
         >
           <option value="" disabled>Choose action…</option>
-          <option value="delete">(Del)ete</option>
-          <option value="duplicate">(Dup)licate</option>
-          <option value="detectRegions">{regionsDetecting ? 'Detecting…' : 'Detect Regions'}</option>
-          <option value="enterDeleteRegionMode" disabled={!hasRegions}>Remove Region (click)</option>
+          <option value="rename">Rename Palette</option>
+          <option value="duplicate">(Dup)licate Palette</option>
+          <option value="delete">(Del)ete Palette</option>
+          <option value="export">Export Palette</option>
+          <option value="" disabled>-------</option>
+          <option value="kmeans5">Find K-Means Swatches (5){hasRegions ? ' (by regions)' : ''}</option>
+          <option value="kmeans7">Find K-Means Swatches (7){hasRegions ? ' (by regions)' : ''}</option>
+          <option value="kmeans9">Find K-Means Swatches (9){hasRegions ? ' (by regions)' : ''}</option>
+          <option value="enterAddingSwatches">Adding Swatches (click)</option>
+          <option value="clearSwatches" disabled={!hasPalette}>Clear all Swatches</option>
+          <option value="" disabled>--------</option>
+          <option value="detectRegions">{regionsDetecting ? 'Detecting…' : 'Detect all Regions'}</option>
+          <option value="enterDeleteRegionMode" disabled={!hasRegions}>Deleting Regions (click)</option>
           <option value="deleteRegions" disabled={!hasRegions}>Clear all Regions</option>
-          <option value="kmeans5">K-means (5){hasRegions ? ' (by regions)' : ''}</option>
-          <option value="kmeans7">K-means (7){hasRegions ? ' (by regions)' : ''}</option>
-          <option value="kmeans9">K-means (9){hasRegions ? ' (by regions)' : ''}</option>
-          <option value="export">Export</option>
         </select>
       </div>
       <MetadataDisplay meta={selectedMeta} />
