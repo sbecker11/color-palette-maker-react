@@ -226,6 +226,16 @@ describe('api', () => {
     );
   });
 
+  it('refreshPairings posts to /api/pairings/:filename and returns result', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ success: true, paletteRegion: [{ x: 5, y: 5, hex: '#ff0000' }] }),
+    });
+    const result = await api.refreshPairings('img-123.jpeg');
+    expect(global.fetch).toHaveBeenCalledWith('/api/pairings/img-123.jpeg', { method: 'POST' });
+    expect(result).toEqual({ success: true, paletteRegion: [{ x: 5, y: 5, hex: '#ff0000' }] });
+  });
+
   it('detectRegions posts to /api/regions/:filename and returns result', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,

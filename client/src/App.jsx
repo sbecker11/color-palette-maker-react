@@ -240,6 +240,29 @@ function App() {
         const result = await api.reorderImages(filenames);
         if (result.success) {
           setImages(reordered);
+          // Calculate new index where the moved item ends up
+          let newIndex;
+          if (direction === 'top') {
+            newIndex = 0;
+          } else if (direction === 'bottom') {
+            newIndex = reordered.length - 1;
+          } else if (direction === 'up') {
+            newIndex = index - 1;
+          } else if (direction === 'down') {
+            newIndex = index + 1;
+          } else {
+            newIndex = index;
+          }
+          // Auto-select the moved palette
+          if (newIndex >= 0 && newIndex < reordered.length) {
+            const movedMeta = reordered[newIndex];
+            const filename = getFilenameFromMeta(movedMeta);
+            if (filename) {
+              handleSelectImage(movedMeta, `/uploads/${encodeURIComponent(filename)}`, {
+                skipPaletteGeneration: true,
+              });
+            }
+          }
         } else {
           showMessage(result.message || 'Failed to reorder.', true);
         }
@@ -247,7 +270,7 @@ function App() {
         showMessage('Failed to reorder.', true);
       }
     },
-    [images, showMessage]
+    [images, showMessage, handleSelectImage]
   );
 
   const handleDeleteImage = useCallback(

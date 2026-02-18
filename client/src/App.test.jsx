@@ -153,6 +153,32 @@ describe('App', () => {
     await waitFor(() => expect(api.reorderImages).toHaveBeenCalled());
   });
 
+  it('auto-selects moved palette after reordering with top/bottom buttons', async () => {
+    api.getImages.mockResolvedValue({
+      success: true,
+      images: [
+        { cachedFilePath: '/uploads/img-1.jpeg', paletteName: 'img-1', colorPalette: ['#ff0000'] },
+        { cachedFilePath: '/uploads/img-2.jpeg', paletteName: 'img-2', colorPalette: ['#00ff00'] },
+        { cachedFilePath: '/uploads/img-3.jpeg', paletteName: 'img-3', colorPalette: ['#0000ff'] },
+      ],
+    });
+    api.generatePalette.mockResolvedValue({ success: true, palette: [] });
+    api.reorderImages.mockResolvedValue({ success: true });
+    render(<App />);
+    await waitFor(() => expect(api.getImages).toHaveBeenCalled());
+    // Initially img-1 is selected (first image)
+    expect(screen.getByLabelText(/name/i)).toHaveValue('img-1');
+    // Click bottom button on second item (img-2) to move it to bottom
+    const bottomBtns = screen.getAllByRole('button', { name: /move to bottom/i });
+    const secondBottomBtn = bottomBtns[1]; // Second item's bottom button
+    fireEvent.click(secondBottomBtn);
+    await waitFor(() => expect(api.reorderImages).toHaveBeenCalled());
+    // After reorder, img-2 should be selected (it moved to bottom, which is now index 2)
+    await waitFor(() => {
+      expect(screen.getByLabelText(/name/i)).toHaveValue('img-2');
+    });
+  });
+
   it('renders ImageViewer', async () => {
     render(<App />);
     await waitFor(() => expect(api.getImages).toHaveBeenCalled());
@@ -288,6 +314,49 @@ describe('App', () => {
     const select = screen.getByRole('combobox', { name: 'Choose action' });
     fireEvent.change(select, { target: { value: 'duplicate' } });
     await waitFor(() => expect(api.duplicateImage).toHaveBeenCalledWith('img-1.jpeg'));
+  });
+
+  it('calls refreshPairings when Match Region Swatches is turned on with regions and palette', async () => {
+    api.getImages.mockResolvedValue({
+      success: true,
+      images: [{
+        cachedFilePath: '/uploads/img-1.jpeg',
+        paletteName: 'img-1',
+        colorPalette: ['#ff0000', '#00ff00'],
+        regions: [[[0, 0], [10, 0], [10, 10], [0, 10]]],
+      }],
+    });
+    api.refreshPairings = vi.fn().mockResolvedValue({
+      success: true,
+      paletteRegion: [{ x: 5, y: 5, hex: '#ff0000', regionColor: '#ff0000' }],
+    });
+    render(<App />);
+    await waitFor(() => expect(api.getImages).toHaveBeenCalled());
+    const matchCheckbox = screen.getByRole('checkbox', { name: 'Match Region Swatches' });
+    fireEvent.click(matchCheckbox);
+    await waitFor(() => expect(api.refreshPairings).toHaveBeenCalledWith('img-1.jpeg'));
+  });
+
+  it('handleAddingSwatchesModeChange(false) exits adding swatches mode', async () => {
+    render(<App />);
+    await waitFor(() => expect(api.getImages).toHaveBeenCalled());
+    const addCheckbox = screen.getByRole('checkbox', { name: 'Adding swatches (click)' });
+    fireEvent.click(addCheckbox);
+    expect(document.body.classList.contains('sampling-active')).toBe(true);
+    fireEvent.click(addCheckbox);
+    await waitFor(() => {
+      expect(document.body.classList.contains('sampling-active')).toBe(false);
+    });
+  });
+
+  it('calls handleClearAllSwatches when Clear all Swatches is selected', async () => {
+    api.savePalette.mockResolvedValue({ success: true });
+    render(<App />);
+    await waitFor(() => expect(api.getImages).toHaveBeenCalled());
+    const select = screen.getByRole('combobox', { name: 'Choose action' });
+    fireEvent.change(select, { target: { value: 'clearSwatches' } });
+    await waitFor(() => expect(api.savePalette).toHaveBeenCalledWith('img-1.jpeg', [], []));
+    await waitFor(() => expect(screen.getByText(/all swatches cleared/i)).toBeInTheDocument());
   });
 
   it('calls enterDeleteRegionMode when Remove Region (click) is selected', async () => {

@@ -103,6 +103,32 @@ describe('ImageViewer', () => {
     expect(onDoubleClickAddColor).not.toHaveBeenCalled();
   });
 
+  it('calls onSampledColorChange with hex on mouse move when in sampling mode', async () => {
+    const onSampledColorChange = vi.fn();
+    render(
+      <ImageViewer
+        imageUrl="/uploads/test.jpg"
+        isSamplingMode={true}
+        onSampledColorChange={onSampledColorChange}
+        onDoubleClickAddColor={vi.fn()}
+      />
+    );
+    await waitFor(() => {
+      const canvas = document.querySelector('#imageCanvas');
+      expect(canvas).toBeInTheDocument();
+    });
+    const img = document.querySelector('#displayedImage');
+    Object.defineProperty(img, 'complete', { value: true, configurable: true });
+    Object.defineProperty(img, 'naturalWidth', { value: 100, configurable: true });
+    Object.defineProperty(img, 'naturalHeight', { value: 80, configurable: true });
+    Object.defineProperty(img, 'clientWidth', { value: 100, configurable: true });
+    Object.defineProperty(img, 'clientHeight', { value: 80, configurable: true });
+    img.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 80 });
+    const overlay = document.querySelector('.image-viewer-overlay');
+    fireEvent.mouseMove(overlay, { clientX: 50, clientY: 40 });
+    expect(onSampledColorChange).toHaveBeenCalledWith('#ff0000');
+  });
+
   it('calls onSampledColorChange(null) on mouse leave when in sampling mode', () => {
     const onSampledColorChange = vi.fn();
     render(
@@ -282,6 +308,32 @@ describe('ImageViewer', () => {
       const overlay = document.querySelector('.image-viewer-overlay');
       expect(overlay).toHaveStyle({ cursor: 'crosshair' });
     });
+  });
+
+  it('calls onSwatchHover when hovering region in Match Region Swatches mode', async () => {
+    const onSwatchHover = vi.fn();
+    const regions = [[[0, 0], [10, 0], [10, 10], [0, 10]]];
+    const paletteRegion = [{ x: 5, y: 5, hex: '#ff0000', regionColor: '#ff0000' }];
+    const palette = ['#ff0000', '#00ff00'];
+    render(
+      <ImageViewer
+        imageUrl="/uploads/test.jpg"
+        isSamplingMode={false}
+        onSampledColorChange={vi.fn()}
+        onDoubleClickAddColor={vi.fn()}
+        regions={regions}
+        paletteRegion={paletteRegion}
+        palette={palette}
+        showMatchPaletteSwatches={true}
+        onSwatchHover={onSwatchHover}
+      />
+    );
+    await waitFor(() => {
+      expect(document.querySelector('.region-display')).toBeInTheDocument();
+    });
+    const regionDisplay = document.querySelector('.region-display');
+    fireEvent.mouseEnter(regionDisplay);
+    expect(onSwatchHover).toHaveBeenCalledWith(0);
   });
 
   it('handles image load error via onerror', async () => {
