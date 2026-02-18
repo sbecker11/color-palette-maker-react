@@ -29,6 +29,8 @@ function MetadataDisplay({ meta }) {
   }
 
   const filename = getFilenameFromMeta(meta) || 'unknown';
+  const numSwatches = Array.isArray(meta.colorPalette) ? meta.colorPalette.length : 0;
+  const numRegions = Array.isArray(meta.regions) ? meta.regions.length : 0;
   const dimensions =
     meta.width && meta.height ? `${meta.width} x ${meta.height}` : 'N/A';
   const format = meta.format || 'N/A';
@@ -43,6 +45,12 @@ function MetadataDisplay({ meta }) {
       <ul>
         <li>
           <strong>Filename:</strong> {filename}
+        </li>
+        <li>
+          <strong># Swatches:</strong> {numSwatches}
+        </li>
+        <li>
+          <strong># Regions:</strong> {numRegions}
         </li>
         <li>
           <strong>Dimensions:</strong> {dimensions}

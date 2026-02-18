@@ -47,6 +47,13 @@ const api = {
     return handleResponse(response);
   },
 
+  async refreshPairings(filename) {
+    const response = await fetch(`/api/pairings/${encodeURIComponent(filename)}`, {
+      method: 'POST',
+    });
+    return handleResponse(response);
+  },
+
   async savePalette(filename, colorPalette, swatchLabels) {
     const body = { colorPalette };
     if (Array.isArray(swatchLabels) && swatchLabels.length === colorPalette.length) {

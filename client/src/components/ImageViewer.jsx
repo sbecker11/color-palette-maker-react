@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { rgbToHex } from '../utils';
 import { shrinkPolygon, polygonToPath } from '../imageViewerGeometry';
 
+// Small "x" cursor for Deleting regions mode when hovering over a region
+const CURSOR_DELETE_X = `url("data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path stroke="#000" stroke-width="2" d="M4 4l12 12M16 4L4 16" fill="none"/></svg>'
+)}") 10 10, auto`;
+
 function ImageViewer({
   imageUrl,
   imageAlt,
@@ -29,17 +34,22 @@ function ImageViewer({
   const [imageSize, setImageSize] = useState({ w: 0, h: 0 });
   const [hoveredRegionIndex, setHoveredRegionIndex] = useState(null);
 
+  // Exit Deleting regions mode when clicking outside the palette image div; clears checkbox and resets cursor.
+  // Exclude palette panel so checkbox toggle handles exit via onChange.
   useEffect(() => {
     if (!isDeleteRegionMode) return;
     const handleDocClick = (e) => {
-      if (viewerRef.current && !viewerRef.current.contains(e.target)) {
-        onExitDeleteRegionMode?.();
-      }
+      if (!viewerRef.current) return;
+      if (viewerRef.current.contains(e.target)) return;
+      if (palettePanelRef?.current?.contains(e.target)) return;
+      onExitDeleteRegionMode?.();
     };
-    document.addEventListener('mousedown', handleDocClick);
-    return () => document.removeEventListener('mousedown', handleDocClick);
-  }, [isDeleteRegionMode, onExitDeleteRegionMode]);
+    document.addEventListener('mousedown', handleDocClick, true);
+    return () => document.removeEventListener('mousedown', handleDocClick, true);
+  }, [isDeleteRegionMode, onExitDeleteRegionMode, palettePanelRef]);
 
+  // Exit Adding swatches mode when clicking outside the palette image div; clears checkbox and resets cursor.
+  // Exclude palette panel so checkbox toggle handles exit via onChange.
   useEffect(() => {
     if (!isSamplingMode) return;
     const handleDocClick = (e) => {
@@ -202,7 +212,7 @@ function ImageViewer({
             <div
               className="image-viewer-overlay"
               style={{
-                cursor: isSamplingMode || isDeleteRegionMode ? 'crosshair' : 'default',
+                cursor: isSamplingMode ? 'crosshair' : isDeleteRegionMode ? 'crosshair' : 'default',
                 pointerEvents: isSamplingMode || isDeleteRegionMode || (regions?.length > 0) ? 'auto' : 'none',
               }}
               onMouseMove={handleMouseMove}
@@ -228,8 +238,6 @@ function ImageViewer({
                   if (target.dataset.regionIndex != null) {
                     e.stopPropagation();
                     onRegionClick?.(parseInt(target.dataset.regionIndex, 10));
-                  } else {
-                    onExitDeleteRegionMode?.();
                   }
                 }}
                 onMouseLeave={() => {
@@ -257,6 +265,7 @@ function ImageViewer({
                       fill={isBoundaryHighlighted ? 'rgba(150, 220, 255, 0.45)' : 'rgba(100, 180, 255, 0.2)'}
                       stroke={isBoundaryHighlighted ? 'rgba(80, 160, 255, 1)' : 'rgba(50, 120, 200, 0.9)'}
                       strokeWidth={isBoundaryHighlighted ? 4 : 3}
+                      style={{ cursor: isDeleteRegionMode ? CURSOR_DELETE_X : 'default' }}
                       onMouseEnter={() => {
                         setHoveredRegionIndex(i);
                         if (showMatchPaletteSwatches && paletteIdxForRegion >= 0) onSwatchHover?.(paletteIdxForRegion);
@@ -310,7 +319,7 @@ function ImageViewer({
                         setHoveredRegionIndex(null);
                         if (showMatchPaletteSwatches) onSwatchHover?.(null);
                       }}
-                      style={{ cursor: isDeleteRegionMode ? 'crosshair' : 'default' }}
+                      style={{ cursor: isDeleteRegionMode ? CURSOR_DELETE_X : 'default' }}
                     >
                       <circle
                         cx={regionData.x}

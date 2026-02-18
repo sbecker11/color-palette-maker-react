@@ -52,8 +52,32 @@ function App() {
   const [regionsState, dispatchRegions] = useReducer(regionsReducer, initialRegionsState);
   const { regions, isDeleteRegionMode, regionsDetecting } = regionsState;
   const [showMatchPaletteSwatches, setShowMatchPaletteSwatches] = useState(false);
+  const [pairingsNeeded, setPairingsNeeded] = useState(false);
   // One palette swatch may map to zero or more overlays (sync highlight between panel swatch and image overlays)
   const [hoveredSwatchIndex, setHoveredSwatchIndex] = useState(null);
+
+  // REFRESH PAIRINGS: when Match Region Swatches is on and pairingsNeeded, recompute region-to-swatch pairings
+  useEffect(() => {
+    if (!showMatchPaletteSwatches || !pairingsNeeded || !selectedMeta) return;
+    const filename = getFilenameFromMeta(selectedMeta);
+    const palette = selectedMeta?.colorPalette;
+    const regs = regionsState.regions;
+    if (!filename || !Array.isArray(palette) || palette.length === 0 || !Array.isArray(regs) || regs.length === 0) {
+      setPairingsNeeded(false);
+      return;
+    }
+    setPairingsNeeded(false);
+    api.refreshPairings(filename).then((result) => {
+      if (result.success && Array.isArray(result.paletteRegion)) {
+        setSelectedMeta((prev) => prev && getFilenameFromMeta(prev) === filename ? { ...prev, paletteRegion: result.paletteRegion } : prev);
+        setImages((prev) =>
+          prev.map((m) =>
+            getFilenameFromMeta(m) === filename ? { ...m, paletteRegion: result.paletteRegion } : m
+          )
+        );
+      }
+    }).catch(() => {});
+  }, [showMatchPaletteSwatches, pairingsNeeded, selectedMeta, regionsState.regions]);
 
   // Apply theme to document
   useEffect(() => {
@@ -273,13 +297,15 @@ function App() {
           const result = await api.savePalette(filename, newPalette, labels);
           if (!result.success) {
             showMessage(result.message || 'Error saving palette.', true);
+          } else if (showMatchPaletteSwatches) {
+            setPairingsNeeded(true);
           }
         } catch {
           showMessage('Network error saving palette update.', true);
         }
       }
     },
-    [selectedMeta, showMessage]
+    [selectedMeta, showMessage, showMatchPaletteSwatches]
   );
 
   const handleClearAllSwatches = useCallback(async () => {
@@ -293,7 +319,10 @@ function App() {
       try {
         const result = await api.savePalette(filename, newPalette, []);
         if (!result.success) showMessage(result.message || 'Error clearing palette.', true);
-        else showMessage('All swatches cleared.');
+        else {
+          showMessage('All swatches cleared.');
+          if (showMatchPaletteSwatches) setPairingsNeeded(true);
+        }
       } catch {
         showMessage('Network error clearing palette.', true);
       }
@@ -310,11 +339,29 @@ function App() {
       setCurrentSampledColor(null);
       document.body.classList.remove('sampling-active');
     } else {
+      dispatchRegions({ type: 'SET_DELETE_MODE', payload: false });
       setIsSamplingMode(true);
       setCurrentSampledColor(null);
       document.body.classList.add('sampling-active');
     }
   }, [selectedMeta, isSamplingMode, showMessage]);
+
+  const handleAddingSwatchesModeChange = useCallback((checked) => {
+    if (checked && !selectedMeta) {
+      showMessage('Select an image first.', true);
+      return;
+    }
+    if (checked) {
+      dispatchRegions({ type: 'SET_DELETE_MODE', payload: false });
+      setIsSamplingMode(true);
+      setCurrentSampledColor(null);
+      document.body.classList.add('sampling-active');
+    } else {
+      setIsSamplingMode(false);
+      setCurrentSampledColor(null);
+      document.body.classList.remove('sampling-active');
+    }
+  }, [selectedMeta, showMessage]);
 
   const handleExitAddingSwatchesMode = useCallback(() => {
     if (isSamplingMode) {
@@ -342,11 +389,13 @@ function App() {
 
     if (filename) {
       const labels = computeSwatchLabels(newPalette);
-      api.savePalette(filename, newPalette, labels).catch(() => {
+      api.savePalette(filename, newPalette, labels).then(() => {
+        if (showMatchPaletteSwatches) setPairingsNeeded(true);
+      }).catch(() => {
         showMessage('Error saving palette.', true);
       });
     }
-  }, [isSamplingMode, selectedMeta, showMessage]);
+  }, [isSamplingMode, selectedMeta, showMessage, showMatchPaletteSwatches]);
 
   const handlePaletteNameBlur = useCallback(() => {
     if (!shouldSavePaletteName(selectedMeta, paletteName)) return;
@@ -456,6 +505,7 @@ function App() {
                 : m
             )
           );
+          if (showMatchPaletteSwatches) setPairingsNeeded(true);
           showMessage(
             regions?.length
               ? `Palette by regions with K-means (${k}).`
@@ -467,7 +517,7 @@ function App() {
       })
       .catch(() => showMessage('Failed to regenerate palette.', true))
       .finally(() => setPaletteGenerating(false));
-  }, [selectedMeta, regions, showMessage]);
+  }, [selectedMeta, regions, showMessage, showMatchPaletteSwatches]);
 
   const handleDetectRegions = useCallback(async () => {
     if (!selectedMeta) {
@@ -494,6 +544,7 @@ function App() {
           )
         );
         dispatchRegions({ type: 'SET_DELETE_MODE', payload: true });
+        if (showMatchPaletteSwatches) setPairingsNeeded(true);
         showMessage(`Detected ${newRegions.length} region(s). Saved. Click to remove unwanted; click outside to exit.`);
       } else {
         showMessage(result.message || result.error || 'Region detection failed.', true);
@@ -503,7 +554,7 @@ function App() {
     } finally {
       dispatchRegions({ type: 'SET_DETECTING', payload: false });
     }
-  }, [selectedMeta, showMessage]);
+  }, [selectedMeta, showMessage, showMatchPaletteSwatches]);
 
   const handleDeleteRegions = useCallback(async () => {
     if (!selectedMeta) return;
@@ -521,13 +572,14 @@ function App() {
       )
     );
     dispatchRegions({ type: 'SET_DELETE_MODE', payload: false });
+    if (showMatchPaletteSwatches) setPairingsNeeded(true);
     try {
       await api.saveMetadata(filename, { regions: emptyRegions, regionLabels: [] });
       showMessage('Regions cleared.');
     } catch {
       showMessage('Failed to save.', true);
     }
-  }, [selectedMeta, showMessage]);
+  }, [selectedMeta, showMessage, showMatchPaletteSwatches]);
 
   const handleRegionClick = useCallback((index) => {
     if (!selectedMeta) return;
@@ -538,6 +590,7 @@ function App() {
     const updatedPaletteRegions = (Array.isArray(paletteRegions) ? paletteRegions : []).filter((_, i) => i !== index);
     const updatedLabels = computeRegionLabels(updated);
     dispatchRegions({ type: 'REMOVE_REGION', payload: index });
+    if (updated.length === 0) dispatchRegions({ type: 'SET_DELETE_MODE', payload: false });
     setSelectedMeta((prev) => (prev ? { ...applyRegionsToMeta(prev, updated), paletteRegion: updatedPaletteRegions } : prev));
     setImages((prev) =>
       prev.map((m) =>
@@ -546,19 +599,35 @@ function App() {
           : m
       )
     );
+    if (showMatchPaletteSwatches) setPairingsNeeded(true);
     api.saveMetadata(filename, { regions: updated, regionLabels: updatedLabels }).catch(() => {
       showMessage('Failed to save region change.', true);
     });
-  }, [selectedMeta, regions, showMessage]);
+  }, [selectedMeta, regions, showMessage, showMatchPaletteSwatches]);
 
   const handleEnterDeleteRegionMode = useCallback(() => {
+    if (isSamplingMode) {
+      setIsSamplingMode(false);
+      setCurrentSampledColor(null);
+      document.body.classList.remove('sampling-active');
+    }
     dispatchRegions({ type: 'SET_DELETE_MODE', payload: true });
-    showMessage('Click a region boundary to remove it; click outside to exit.');
-  }, [showMessage]);
+    showMessage('Click a region to remove it; click outside the image to exit.');
+  }, [showMessage, isSamplingMode]);
 
   const handleExitDeleteRegionMode = useCallback(() => {
     dispatchRegions({ type: 'SET_DELETE_MODE', payload: false });
   }, []);
+
+  const handleDeleteRegionModeChange = useCallback((checked) => {
+    if (checked && isSamplingMode) {
+      setIsSamplingMode(false);
+      setCurrentSampledColor(null);
+      document.body.classList.remove('sampling-active');
+    }
+    dispatchRegions({ type: 'SET_DELETE_MODE', payload: checked });
+    if (checked) showMessage('Click a region to remove it; click outside the image to exit.');
+  }, [showMessage, isSamplingMode]);
 
   const palettePanelRef = useRef(null);
   const palette = selectedMeta?.colorPalette;
@@ -593,6 +662,7 @@ function App() {
           isSamplingMode={isSamplingMode}
           currentSampledColor={currentSampledColor}
           onToggleSamplingMode={handleToggleSamplingMode}
+          onAddingSwatchesModeChange={handleAddingSwatchesModeChange}
           onDeleteSwatch={handleDeleteSwatch}
           onClearAllSwatches={handleClearAllSwatches}
           paletteName={paletteName}
@@ -606,10 +676,15 @@ function App() {
           onDetectRegions={handleDetectRegions}
           onDeleteRegions={handleDeleteRegions}
           onEnterDeleteRegionMode={handleEnterDeleteRegionMode}
+          isDeleteRegionMode={isDeleteRegionMode}
+          onDeleteRegionModeChange={handleDeleteRegionModeChange}
           regionsDetecting={regionsDetecting}
           hasRegions={regions && regions.length > 0}
           showMatchPaletteSwatches={showMatchPaletteSwatches}
-          onShowMatchPaletteSwatchesChange={setShowMatchPaletteSwatches}
+          onShowMatchPaletteSwatchesChange={(checked) => {
+            setShowMatchPaletteSwatches(checked);
+            if (checked) setPairingsNeeded(true);
+          }}
           hoveredSwatchIndex={hoveredSwatchIndex}
           onSwatchHover={setHoveredSwatchIndex}
         />

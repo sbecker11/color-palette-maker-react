@@ -9,6 +9,7 @@ describe('PaletteDisplay', () => {
     isSamplingMode: false,
     currentSampledColor: null,
     onToggleSamplingMode: vi.fn(),
+    onAddingSwatchesModeChange: vi.fn(),
     onDeleteSwatch: vi.fn(),
     onClearAllSwatches: vi.fn(),
     paletteName: 'Test Palette',
@@ -22,6 +23,8 @@ describe('PaletteDisplay', () => {
     onDetectRegions: vi.fn(),
     onDeleteRegions: vi.fn(),
     onEnterDeleteRegionMode: vi.fn(),
+    isDeleteRegionMode: false,
+    onDeleteRegionModeChange: vi.fn(),
     regionsDetecting: false,
     hasRegions: false,
     onSwatchHover: vi.fn(),
@@ -75,22 +78,40 @@ describe('PaletteDisplay', () => {
     expect(defaultProps.onDuplicate).toHaveBeenCalledTimes(1);
   });
 
-  it('calls onToggleSamplingMode when Adding swatches toggle is changed', () => {
-    const onToggle = vi.fn();
-    render(<PaletteDisplay {...defaultProps} onToggleSamplingMode={onToggle} />);
-    const toggle = screen.getByRole('checkbox', { name: 'Adding swatches' });
+  it('calls onAddingSwatchesModeChange when Adding swatches (click) checkbox is changed', () => {
+    const onAddingSwatchesModeChange = vi.fn();
+    render(<PaletteDisplay {...defaultProps} onAddingSwatchesModeChange={onAddingSwatchesModeChange} />);
+    const toggle = screen.getByRole('checkbox', { name: 'Adding swatches (click)' });
     fireEvent.click(toggle);
-    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(onAddingSwatchesModeChange).toHaveBeenCalledWith(true);
   });
 
-  it('Adding swatches toggle is checked when isSamplingMode', () => {
+  it('Adding swatches (click) toggle is checked when isSamplingMode', () => {
     render(<PaletteDisplay {...defaultProps} isSamplingMode={true} />);
-    expect(screen.getByRole('checkbox', { name: 'Adding swatches' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Adding swatches (click)' })).toBeChecked();
   });
 
-  it('Adding swatches toggle is disabled when no selectedMeta', () => {
+  it('Adding swatches (click) toggle is disabled when no selectedMeta', () => {
     render(<PaletteDisplay {...defaultProps} selectedMeta={null} />);
-    expect(screen.getByRole('checkbox', { name: 'Adding swatches' })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: 'Adding swatches (click)' })).toBeDisabled();
+  });
+
+  it('calls onDeleteRegionModeChange when Deleting regions (click) checkbox is changed', () => {
+    const onDeleteRegionModeChange = vi.fn();
+    render(<PaletteDisplay {...defaultProps} hasRegions={true} onDeleteRegionModeChange={onDeleteRegionModeChange} />);
+    const toggle = screen.getByRole('checkbox', { name: 'Deleting regions (click)' });
+    fireEvent.click(toggle);
+    expect(onDeleteRegionModeChange).toHaveBeenCalledWith(true);
+  });
+
+  it('Deleting regions (click) checkbox is checked when isDeleteRegionMode', () => {
+    render(<PaletteDisplay {...defaultProps} hasRegions={true} isDeleteRegionMode={true} />);
+    expect(screen.getByRole('checkbox', { name: 'Deleting regions (click)' })).toBeChecked();
+  });
+
+  it('Deleting regions (click) checkbox is disabled when no regions', () => {
+    render(<PaletteDisplay {...defaultProps} hasRegions={false} />);
+    expect(screen.getByRole('checkbox', { name: 'Deleting regions (click)' })).toBeDisabled();
   });
 
   it('shows Export Palette option in actions dropdown', () => {

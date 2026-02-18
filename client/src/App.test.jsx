@@ -305,7 +305,7 @@ describe('App', () => {
     const select = screen.getByRole('combobox', { name: 'Choose action' });
     fireEvent.change(select, { target: { value: 'enterDeleteRegionMode' } });
     await waitFor(() =>
-      expect(screen.getByText(/click a region boundary to remove/i)).toBeInTheDocument()
+      expect(screen.getByText(/click a region to remove/i)).toBeInTheDocument()
     );
   });
 });

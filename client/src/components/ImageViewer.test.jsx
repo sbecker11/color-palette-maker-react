@@ -118,7 +118,7 @@ describe('ImageViewer', () => {
     expect(onSampledColorChange).toHaveBeenCalledWith(null);
   });
 
-  it('has crosshair cursor when in sampling mode', () => {
+  it('has crosshair (plus) cursor when in sampling mode', () => {
     render(
       <ImageViewer
         imageUrl="/uploads/test.jpg"
@@ -163,8 +163,9 @@ describe('ImageViewer', () => {
     expect(path).toBeInTheDocument();
   });
 
-  it('calls onRegionClick when region path is clicked in delete mode', async () => {
+  it('calls onRegionClick when region path is clicked in delete mode (mode stays until click outside)', async () => {
     const onRegionClick = vi.fn();
+    const onExitDeleteRegionMode = vi.fn();
     const regions = [[[0, 0], [10, 0], [10, 10], [0, 10]]];
     render(
       <ImageViewer
@@ -175,6 +176,7 @@ describe('ImageViewer', () => {
         regions={regions}
         isDeleteRegionMode={true}
         onRegionClick={onRegionClick}
+        onExitDeleteRegionMode={onExitDeleteRegionMode}
       />
     );
     await waitFor(() => {
@@ -183,6 +185,7 @@ describe('ImageViewer', () => {
     const path = document.querySelector('.region-boundary[data-region-index="0"]');
     fireEvent.click(path);
     expect(onRegionClick).toHaveBeenCalledWith(0);
+    expect(onExitDeleteRegionMode).not.toHaveBeenCalled();
   });
 
   it('calls onExitDeleteRegionMode when clicking outside viewer in delete mode', async () => {
@@ -222,7 +225,7 @@ describe('ImageViewer', () => {
     expect(onExitAddingSwatchesMode).toHaveBeenCalled();
   });
 
-  it('calls onExitDeleteRegionMode when clicking SVG without region target in delete mode', async () => {
+  it('does not call onExitDeleteRegionMode when clicking SVG without region target (exit only outside image)', async () => {
     const onExitDeleteRegionMode = vi.fn();
     const regions = [[[0, 0], [10, 0], [10, 10], [0, 10]]];
     render(
@@ -241,7 +244,7 @@ describe('ImageViewer', () => {
     });
     const svg = document.querySelector('.region-overlay');
     fireEvent.click(svg);
-    expect(onExitDeleteRegionMode).toHaveBeenCalled();
+    expect(onExitDeleteRegionMode).not.toHaveBeenCalled();
   });
 
   it('renders palette region display when paletteRegion and imageSize are set', async () => {

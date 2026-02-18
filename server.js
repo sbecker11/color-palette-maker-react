@@ -380,6 +380,49 @@ app.put('/api/palette/:filename', express.json(), async (req, res) => { // Use e
     }
 });
 
+// POST /api/pairings/:filename - Recompute region-to-swatch pairings (paletteRegion)
+app.post('/api/pairings/:filename', async (req, res) => {
+    const filename = req.params.filename;
+    if (!validateFilename(filename)) {
+        return res.status(400).json({ success: false, message: 'Invalid filename.' });
+    }
+    let allMetadata;
+    try {
+        allMetadata = await metadataHandler.readMetadata();
+    } catch (readError) {
+        return res.status(500).json({ success: false, message: 'Could not read metadata.' });
+    }
+    const imageIndex = allMetadata.findIndex(entry => path.basename(entry.cachedFilePath || '') === filename);
+    if (imageIndex === -1) {
+        return res.status(404).json({ success: false, message: 'Image not found.' });
+    }
+    const meta = allMetadata[imageIndex];
+    const palette = Array.isArray(meta.colorPalette) ? meta.colorPalette : [];
+    const regions = Array.isArray(meta.regions) ? meta.regions : [];
+    if (palette.length === 0 || regions.length === 0) {
+        allMetadata[imageIndex].paletteRegion = [];
+        await metadataHandler.rewriteMetadata(allMetadata);
+        return res.json({ success: true, paletteRegion: [] });
+    }
+    const imagePath = path.join(uploadsDir, filename);
+    if (!fs.existsSync(imagePath)) {
+        allMetadata[imageIndex].paletteRegion = [];
+        await metadataHandler.rewriteMetadata(allMetadata);
+        return res.json({ success: true, paletteRegion: [] });
+    }
+    try {
+        const paletteRegion = await imageProcessor.computeRegionColorMarkers(imagePath, regions, palette);
+        allMetadata[imageIndex].paletteRegion = paletteRegion;
+        await metadataHandler.rewriteMetadata(allMetadata);
+        res.json({ success: true, paletteRegion });
+    } catch (err) {
+        console.warn('[API POST /pairings] Could not compute pairings:', err);
+        allMetadata[imageIndex].paletteRegion = [];
+        await metadataHandler.rewriteMetadata(allMetadata);
+        res.json({ success: true, paletteRegion: [] });
+    }
+});
+
 // PUT /api/metadata/:filename - Update specific metadata fields (paletteName, regions, regionLabels)
 app.put('/api/metadata/:filename', express.json(), async (req, res) => {
     const filename = req.params.filename;

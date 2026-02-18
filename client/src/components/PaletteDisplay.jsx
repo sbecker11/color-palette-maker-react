@@ -8,6 +8,7 @@ function PaletteDisplay({
   isSamplingMode,
   currentSampledColor,
   onToggleSamplingMode,
+  onAddingSwatchesModeChange,
   onDeleteSwatch,
   onClearAllSwatches,
   paletteName,
@@ -21,6 +22,8 @@ function PaletteDisplay({
   onDetectRegions,
   onDeleteRegions,
   onEnterDeleteRegionMode,
+  isDeleteRegionMode = false,
+  onDeleteRegionModeChange,
   regionsDetecting,
   hasRegions,
   showMatchPaletteSwatches = false,
@@ -102,15 +105,15 @@ function PaletteDisplay({
           className="palette-item empty-swatch-circle"
           title={
             isSamplingMode && currentSampledColor
-              ? `Double-click palette image to add ${currentSampledColor}. Turn off "Adding swatches" to exit.`
+              ? `Double-click palette image to add ${currentSampledColor}. Turn off "Adding swatches (click)" to exit.`
               : isSamplingMode
-                ? 'Double-click palette image to add color. Turn off "Adding swatches" to exit.'
-                : 'Click to enter add swatch mode (same as "Adding swatches" toggle)'
+                ? 'Double-click palette image to add color. Turn off "Adding swatches (click)" to exit.'
+                : 'Click to enter add swatch mode (same as "Adding swatches (click)" toggle)'
           }
           onClick={onToggleSamplingMode}
           role="button"
           tabIndex={0}
-          aria-label="Empty swatch circle. Click to toggle add swatch mode (same as Adding swatches)."
+          aria-label="Empty swatch circle. Click to toggle add swatch mode (same as Adding swatches (click))."
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
@@ -135,20 +138,30 @@ function PaletteDisplay({
             type="checkbox"
             checked={showMatchPaletteSwatches}
             onChange={(e) => onShowMatchPaletteSwatchesChange?.(e.target.checked)}
-            disabled={!hasRegions}
-            aria-label="Show matching palette swatches over image"
+            disabled={!hasRegions || !hasPalette}
+            aria-label="Match Region Swatches"
           />
-          Match palette swatches
+          Match Region Swatches
         </label>
         <label>
           <input
             type="checkbox"
             checked={isSamplingMode}
-            onChange={() => onToggleSamplingMode?.()}
+            onChange={(e) => onAddingSwatchesModeChange?.(e.target.checked)}
             disabled={!selectedMeta}
-            aria-label="Adding swatches"
+            aria-label="Adding swatches (click)"
           />
-          Adding swatches
+          Adding swatches (click)
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={hasRegions && isDeleteRegionMode}
+            onChange={(e) => onDeleteRegionModeChange?.(e.target.checked)}
+            disabled={!hasRegions}
+            aria-label="Deleting regions (click)"
+          />
+          Deleting regions (click)
         </label>
       </div>
       <div id="paletteActionsRow">
