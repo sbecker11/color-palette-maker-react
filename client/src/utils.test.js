@@ -4,6 +4,7 @@ import {
   getFilenameWithoutExt,
   formatFileSize,
   rgbToHex,
+  formatHexDisplay,
 } from './utils';
 
 describe('utils', () => {
@@ -66,6 +67,24 @@ describe('utils', () => {
 
     it('pads single hex digits', () => {
       expect(rgbToHex(0, 15, 0)).toBe('#000f00');
+    });
+  });
+
+  describe('formatHexDisplay', () => {
+    it('returns 7-char lowercase hex for #rrggbb', () => {
+      expect(formatHexDisplay('#ff0000')).toBe('#ff0000');
+      expect(formatHexDisplay('#FF0000')).toBe('#ff0000');
+      expect(formatHexDisplay('#aAbBcC')).toBe('#aabbcc');
+    });
+
+    it('expands #rgb to #rrggbb', () => {
+      expect(formatHexDisplay('#f00')).toBe('#ff0000');
+      expect(formatHexDisplay('#abc')).toBe('#aabbcc');
+    });
+
+    it('returns empty string for invalid input', () => {
+      expect(formatHexDisplay('')).toBe('');
+      expect(formatHexDisplay(null)).toBe('');
     });
   });
 });

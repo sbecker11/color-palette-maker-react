@@ -77,6 +77,16 @@ Browse, select, delete, reorder (move to top/bottom or step up/down), and duplic
 4. Double-click to add that color to the palette
 5. Turn off **Adding swatches** or click the empty swatch to exit
 
+### Dark Reader
+
+If you use the [Dark Reader](https://darkreader.org/) browser extension, it may override the sampled color preview in the empty swatch circle. To fix this, exclude this site from Dark Reader:
+
+1. Click the Dark Reader icon in your browser toolbar
+2. Click the gear icon (Settings)
+3. Open the **Site list** tab
+4. Add this site to the **Not inverted** (or **Disabled for**) list — e.g. `localhost`, `localhost:5173`, or your deployed domain
+5. Apply and refresh the page
+
 ---
 
 ## Metadata

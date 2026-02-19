@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { formatHexDisplay } from '../utils';
 import MetadataDisplay from './MetadataDisplay';
 
 function PaletteDisplay({
@@ -81,7 +82,7 @@ function PaletteDisplay({
                 {swatchLabels[idx] ?? String.fromCharCode(65 + (idx % 26))}
               </span>
             </div>
-            <span className="palette-label">{hexColor}</span>
+            <span className="palette-label">{formatHexDisplay(hexColor)}</span>
             <button
               type="button"
               className="swatch-delete-btn"
@@ -100,7 +101,7 @@ function PaletteDisplay({
             No color palette extracted for this image.
           </span>
         )}
-        {/* Empty swatch circle - click to enter manual swatch creation mode */}
+        {/* Sample swatch - same as filled swatches but no × delete button */}
         <div
           className="palette-item empty-swatch-circle"
           title={
@@ -113,7 +114,7 @@ function PaletteDisplay({
           onClick={onToggleSamplingMode}
           role="button"
           tabIndex={0}
-          aria-label="Empty swatch circle. Click to toggle add swatch mode (same as Adding swatches (click))."
+          aria-label="Sample swatch. Click to toggle add swatch mode (same as Adding swatches (click))."
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
@@ -123,13 +124,18 @@ function PaletteDisplay({
         >
           <div className="palette-swatch-wrapper">
             <div
-              className={`palette-swatch test-placeholder-swatch ${isSamplingMode ? 'sampling' : ''}`}
+              className={`palette-swatch palette-swatch-sample ${!(isSamplingMode && currentSampledColor) ? 'palette-swatch-sample-empty' : ''}`}
               style={{
-                backgroundColor: isSamplingMode && currentSampledColor ? currentSampledColor : 'transparent',
+                '--sample-swatch-color': isSamplingMode && currentSampledColor ? currentSampledColor : 'transparent',
+                boxShadow: isSamplingMode && currentSampledColor ? `inset 0 0 0 50px ${currentSampledColor}` : 'none',
               }}
+              title={isSamplingMode && currentSampledColor ? currentSampledColor : undefined}
             />
+            <span className={`swatch-label ${isSamplingMode && currentSampledColor ? 'swatch-label-hidden' : ''}`} aria-hidden="true">+</span>
           </div>
-          <span className="palette-label test-placeholder-label">#888888</span>
+          <span className="palette-label">
+            {isSamplingMode && currentSampledColor ? formatHexDisplay(currentSampledColor) : '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0'}
+          </span>
         </div>
       </div>
       <div id="paletteMatchSwatchesRow" className="palette-toggle-row">

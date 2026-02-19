@@ -26,3 +26,13 @@ export function formatFileSize(bytes) {
 export function rgbToHex(r, g, b) {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
+
+/** Format hex for display: always 7 chars (#rrggbb), lowercase. Expands #rgb to #rrggbb. */
+export function formatHexDisplay(hex) {
+  if (!hex || typeof hex !== 'string') return '';
+  const h = hex.trim().toLowerCase();
+  if (/^#[0-9a-f]{6}$/.test(h)) return h;
+  const m = h.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/);
+  if (m) return `#${m[1]}${m[1]}${m[2]}${m[2]}${m[3]}${m[3]}`;
+  return h.startsWith('#') ? h : `#${h}`;
+}

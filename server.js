@@ -90,13 +90,8 @@ app.get('/api/images', async (req, res) => {
     console.log('[API GET /images] Request received.');
     try {
         const metadata = await metadataHandler.readMetadata();
-        // Sort by createdDateTime descending (newest first), fallback to reverse order if no date
-        const sorted = metadata.sort((a, b) => {
-            const dateA = a.createdDateTime ? new Date(a.createdDateTime).getTime() : 0;
-            const dateB = b.createdDateTime ? new Date(b.createdDateTime).getTime() : 0;
-            return dateB - dateA; // Descending: newest first
-        });
-        res.json({ success: true, images: sorted });
+        // File stores [bottom...top]; reverse for display order [top...bottom]
+        res.json({ success: true, images: metadata.slice().reverse() });
     } catch (error) {
         console.error('[API GET /images] Error:', error);
         res.status(500).json({ success: false, message: "Error reading image metadata." });

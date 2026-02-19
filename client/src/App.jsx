@@ -236,37 +236,37 @@ function App() {
       if (!state) return;
 
       const { reordered, filenames } = state;
+      const prevImages = images;
+      setImages(reordered);
+      let newIndex;
+      if (direction === 'top') {
+        newIndex = 0;
+      } else if (direction === 'bottom') {
+        newIndex = reordered.length - 1;
+      } else if (direction === 'up') {
+        newIndex = index - 1;
+      } else if (direction === 'down') {
+        newIndex = index + 1;
+      } else {
+        newIndex = index;
+      }
+      if (newIndex >= 0 && newIndex < reordered.length) {
+        const movedMeta = reordered[newIndex];
+        const filename = getFilenameFromMeta(movedMeta);
+        if (filename) {
+          handleSelectImage(movedMeta, `/uploads/${encodeURIComponent(filename)}`, {
+            skipPaletteGeneration: true,
+          });
+        }
+      }
       try {
         const result = await api.reorderImages(filenames);
-        if (result.success) {
-          setImages(reordered);
-          // Calculate new index where the moved item ends up
-          let newIndex;
-          if (direction === 'top') {
-            newIndex = 0;
-          } else if (direction === 'bottom') {
-            newIndex = reordered.length - 1;
-          } else if (direction === 'up') {
-            newIndex = index - 1;
-          } else if (direction === 'down') {
-            newIndex = index + 1;
-          } else {
-            newIndex = index;
-          }
-          // Auto-select the moved palette
-          if (newIndex >= 0 && newIndex < reordered.length) {
-            const movedMeta = reordered[newIndex];
-            const filename = getFilenameFromMeta(movedMeta);
-            if (filename) {
-              handleSelectImage(movedMeta, `/uploads/${encodeURIComponent(filename)}`, {
-                skipPaletteGeneration: true,
-              });
-            }
-          }
-        } else {
+        if (!result.success) {
+          setImages(prevImages);
           showMessage(result.message || 'Failed to reorder.', true);
         }
       } catch {
+        setImages(prevImages);
         showMessage('Failed to reorder.', true);
       }
     },

@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { rgbToHex } from '../utils';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { rgbToHex, formatHexDisplay } from '../utils';
 import { shrinkPolygon, polygonToPath } from '../imageViewerGeometry';
 
 // Small "x" cursor for Deleting regions mode when hovering over a region
@@ -33,69 +33,12 @@ function ImageViewer({
   const viewerRef = useRef(null);
   const [imageSize, setImageSize] = useState({ w: 0, h: 0 });
   const [hoveredRegionIndex, setHoveredRegionIndex] = useState(null);
+  const lastMouseEventRef = useRef(null);
+  const onSampledColorChangeRef = useRef(onSampledColorChange);
+  const isSamplingModeRef = useRef(isSamplingMode);
 
-  // Exit Deleting regions mode when clicking outside the palette image div; clears checkbox and resets cursor.
-  // Exclude palette panel so checkbox toggle handles exit via onChange.
-  useEffect(() => {
-    if (!isDeleteRegionMode) return;
-    const handleDocClick = (e) => {
-      if (!viewerRef.current) return;
-      if (viewerRef.current.contains(e.target)) return;
-      if (palettePanelRef?.current?.contains(e.target)) return;
-      onExitDeleteRegionMode?.();
-    };
-    document.addEventListener('mousedown', handleDocClick, true);
-    return () => document.removeEventListener('mousedown', handleDocClick, true);
-  }, [isDeleteRegionMode, onExitDeleteRegionMode, palettePanelRef]);
-
-  // Exit Adding swatches mode when clicking outside the palette image div; clears checkbox and resets cursor.
-  // Exclude palette panel so checkbox toggle handles exit via onChange.
-  useEffect(() => {
-    if (!isSamplingMode) return;
-    const handleDocClick = (e) => {
-      if (!viewerRef.current) return;
-      if (viewerRef.current.contains(e.target)) return;
-      if (palettePanelRef?.current?.contains(e.target)) return;
-      onExitAddingSwatchesMode?.();
-    };
-    document.addEventListener('mousedown', handleDocClick, true);
-    return () => document.removeEventListener('mousedown', handleDocClick, true);
-  }, [isSamplingMode, onExitAddingSwatchesMode, palettePanelRef]);
-
-  // Draw image to hidden canvas when imageUrl changes
-  useEffect(() => {
-    if (!imageUrl || !canvasRef.current) {
-      // Reset dimensions when no image; defer to avoid set-state-in-effect warning
-      queueMicrotask(() => setImageSize({ w: 0, h: 0 }));
-      return;
-    }
-
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.onload = () => {
-      if (!canvasRef.current) return;
-      const canvas = canvasRef.current;
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      setImageSize({ w: img.naturalWidth, h: img.naturalHeight });
-      const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      if (ctx) {
-        canvasCtxRef.current = ctx;
-        ctx.drawImage(img, 0, 0);
-      }
-    };
-    img.onerror = () => {
-      if (canvasCtxRef.current && canvasRef.current) {
-        canvasCtxRef.current.clearRect(
-          0,
-          0,
-          canvasRef.current.width,
-          canvasRef.current.height
-        );
-      }
-    };
-    img.src = imageUrl;
-  }, [imageUrl]);
+  onSampledColorChangeRef.current = onSampledColorChange;
+  isSamplingModeRef.current = isSamplingMode;
 
   const getCanvasCoords = (event) => {
     const imgElement = imgRef.current;
@@ -136,14 +79,20 @@ function ImageViewer({
     return { x, y };
   };
 
-  const handleMouseMove = (event) => {
+  const sampleColorAtEvent = useCallback((event) => {
     if (!isSamplingMode) return;
 
     const coords = getCanvasCoords(event);
-    if (!coords) return;
+    if (!coords) {
+      onSampledColorChange?.(null);
+      return;
+    }
 
     const ctx = canvasCtxRef.current;
-    if (!ctx) return;
+    if (!ctx) {
+      onSampledColorChange?.(null);
+      return;
+    }
 
     try {
       const pixelData = ctx.getImageData(coords.x, coords.y, 1, 1).data;
@@ -154,6 +103,149 @@ function ImageViewer({
       onSampledColorChange?.(hex);
     } catch {
       onSampledColorChange?.(null);
+    }
+  }, [isSamplingMode, onSampledColorChange]);
+
+  // Exit Deleting regions mode when clicking outside the palette image div; clears checkbox and resets cursor.
+  // Exclude palette panel so checkbox toggle handles exit via onChange.
+  useEffect(() => {
+    if (!isDeleteRegionMode) return;
+    const handleDocClick = (e) => {
+      if (!viewerRef.current) return;
+      if (viewerRef.current.contains(e.target)) return;
+      if (palettePanelRef?.current?.contains(e.target)) return;
+      onExitDeleteRegionMode?.();
+    };
+    document.addEventListener('mousedown', handleDocClick, true);
+    return () => document.removeEventListener('mousedown', handleDocClick, true);
+  }, [isDeleteRegionMode, onExitDeleteRegionMode, palettePanelRef]);
+
+  // Exit Adding swatches mode when clicking outside the palette image div; clears checkbox and resets cursor.
+  // Exclude palette panel so checkbox toggle handles exit via onChange.
+  useEffect(() => {
+    if (!isSamplingMode) return;
+    const handleDocClick = (e) => {
+      if (!viewerRef.current) return;
+      if (viewerRef.current.contains(e.target)) return;
+      if (palettePanelRef?.current?.contains(e.target)) return;
+      onExitAddingSwatchesMode?.();
+    };
+    document.addEventListener('mousedown', handleDocClick, true);
+    return () => document.removeEventListener('mousedown', handleDocClick, true);
+  }, [isSamplingMode, onExitAddingSwatchesMode, palettePanelRef]);
+
+  // Track mouse/pointer position globally and sample color on every move when in sampling mode.
+  // Use refs so the listener always sees latest props (avoids stale closure after setState re-renders).
+  // Use elementFromPoint for reliable hit-testing; listen to both mousemove and pointermove for device support.
+  useEffect(() => {
+    const handleMove = (e) => {
+      lastMouseEventRef.current = e;
+      if (!isSamplingModeRef.current) return;
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      if (!el || !viewerRef.current?.contains(el)) {
+        onSampledColorChangeRef.current?.(null);
+        return;
+      }
+      const coords = getCanvasCoords(e);
+      if (!coords) {
+        onSampledColorChangeRef.current?.(null);
+        return;
+      }
+      const ctx = canvasCtxRef.current;
+      if (!ctx) {
+        onSampledColorChangeRef.current?.(null);
+        return;
+      }
+      try {
+        const pixelData = ctx.getImageData(coords.x, coords.y, 1, 1).data;
+        const hex = rgbToHex(pixelData[0], pixelData[1], pixelData[2]);
+        onSampledColorChangeRef.current?.(hex);
+      } catch {
+        onSampledColorChangeRef.current?.(null);
+      }
+    };
+
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('pointermove', handleMove);
+    return () => {
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('pointermove', handleMove);
+    };
+  }, []);
+
+  // Sample color immediately when entering sampling mode
+  useEffect(() => {
+    if (!isSamplingMode) {
+      onSampledColorChange?.(null);
+      return;
+    }
+    const e = lastMouseEventRef.current;
+    if (!e || !viewerRef.current?.contains(e.target)) return;
+    const coords = getCanvasCoords(e);
+    if (!coords) return;
+    const ctx = canvasCtxRef.current;
+    if (!ctx) return;
+    try {
+      const pixelData = ctx.getImageData(coords.x, coords.y, 1, 1).data;
+      onSampledColorChangeRef.current?.(rgbToHex(pixelData[0], pixelData[1], pixelData[2]));
+    } catch {
+      onSampledColorChangeRef.current?.(null);
+    }
+  }, [isSamplingMode]);
+
+  // Draw image to hidden canvas when imageUrl changes
+  useEffect(() => {
+    if (!imageUrl || !canvasRef.current) {
+      // Reset dimensions when no image; defer to avoid set-state-in-effect warning
+      queueMicrotask(() => setImageSize({ w: 0, h: 0 }));
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      if (!canvasRef.current) return;
+      const canvas = canvasRef.current;
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      setImageSize({ w: img.naturalWidth, h: img.naturalHeight });
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (ctx) {
+        canvasCtxRef.current = ctx;
+        ctx.drawImage(img, 0, 0);
+      }
+    };
+    img.onerror = () => {
+      if (canvasCtxRef.current && canvasRef.current) {
+        canvasCtxRef.current.clearRect(
+          0,
+          0,
+          canvasRef.current.width,
+          canvasRef.current.height
+        );
+      }
+    };
+    img.src = imageUrl;
+  }, [imageUrl]);
+
+  const handleMouseMove = (event) => {
+    lastMouseEventRef.current = event;
+    if (!isSamplingModeRef.current) return;
+    const coords = getCanvasCoords(event);
+    if (!coords) {
+      onSampledColorChangeRef.current?.(null);
+      return;
+    }
+    const ctx = canvasCtxRef.current;
+    if (!ctx) {
+      onSampledColorChangeRef.current?.(null);
+      return;
+    }
+    try {
+      const pixelData = ctx.getImageData(coords.x, coords.y, 1, 1).data;
+      onSampledColorChangeRef.current?.(rgbToHex(pixelData[0], pixelData[1], pixelData[2]));
+    } catch {
+      onSampledColorChangeRef.current?.(null);
     }
   };
 
@@ -296,7 +388,7 @@ function ImageViewer({
                   const isOverlayHighlighted = (hoveredSwatchIndex === paletteIdx) || (showMatchPaletteSwatches && isRegionHovered);
                   const regionHexFontSize = isRegionHighlighted ? 16 : 13;
                   const swatchHexFontSize = (isRegionHighlighted || isOverlayHighlighted) ? 17 : 14;
-                  const baseStyle = (fontSize) => ({ textAnchor: 'middle', dominantBaseline: 'central', fontSize });
+                  const baseStyle = (fontSize) => ({ textAnchor: 'middle', dominantBaseline: 'central', fontSize, fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Monaco, "Courier New", monospace' });
                   const dualText = (h, v, t, hovered, fontSize) => (
                     <>
                       <text x={h} y={v} {...baseStyle(fontSize)} fill="black">{t}</text>
@@ -376,7 +468,7 @@ function ImageViewer({
                               </>
                             );
                           })()}
-                          {dualText(swatchCx, swatchCy + labelOffset, paletteColor, isRegionHighlighted || isOverlayHighlighted, swatchHexFontSize)}
+                          {dualText(swatchCx, swatchCy + labelOffset, formatHexDisplay(paletteColor), isRegionHighlighted || isOverlayHighlighted, swatchHexFontSize)}
                         </>
                       )}
                       <text x={regionData.x + 1} y={regionData.y + 1} {...regionLabelStyle} fill="black" className="region-label-shadow">
@@ -391,7 +483,7 @@ function ImageViewer({
                       >
                         {regionLabel}
                       </text>
-                      {dualText(regionData.x, regionData.y + labelOffset, regionColor, isRegionHighlighted, regionHexFontSize)}
+                      {dualText(regionData.x, regionData.y + labelOffset, formatHexDisplay(regionColor), isRegionHighlighted, regionHexFontSize)}
                     </g>
                   );
                 })}
