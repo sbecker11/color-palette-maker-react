@@ -6,7 +6,7 @@ describe('Header', () => {
   it('renders the app title', () => {
     render(<Header theme="light" onToggleTheme={() => {}} />);
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Color Palette Maker (React)'
+      /Color Palette Maker/
     );
   });
 

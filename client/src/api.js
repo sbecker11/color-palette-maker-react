@@ -11,6 +11,11 @@ async function handleResponse(response) {
 }
 
 const api = {
+  async getConfig() {
+    const response = await fetch('/api/config');
+    return handleResponse(response);
+  },
+
   async getImages() {
     const response = await fetch('/api/images');
     return handleResponse(response);

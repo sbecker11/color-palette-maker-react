@@ -1,4 +1,5 @@
 /* Color Palette Maker - React SPA Styles */
+
 :root {
   --gap: 10px;
   --bg-color: #fff;
@@ -61,11 +62,20 @@ header {
   justify-content: space-between;
   align-items: center;
 }
+
 header h1 {
   margin: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.hero-title-clickable {
+  cursor: pointer;
+}
+
+.hero-title-clickable:hover {
+  text-decoration: underline;
 }
 
 .header-tech {

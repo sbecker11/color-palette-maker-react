@@ -15,6 +15,8 @@ const imageProcessor = require('./image_processor');
 const app = express();
 const port = parseInt(process.env.PORT, 10) || 3000;
 
+const titleCardMode = process.argv.includes('--title-card');
+
 /** Returns palette region data from meta (paletteRegion or legacy clusterMarkers). */
 function getPaletteRegion(meta) {
     if (Array.isArray(meta?.paletteRegion)) return meta.paletteRegion;
@@ -79,11 +81,18 @@ const upload = multer({
 // --- Middleware ---
 // Serve static files from the 'uploads' directory
 app.use('/uploads', express.static(uploadsDir));
+// Serve movie assets (title-card.html, hero-title.css)
+app.use('/movie', express.static(path.join(__dirname, 'movie')));
 // Serve static files from the React build (client/dist)
 const frontendDir = path.join(__dirname, 'client', 'dist');
 app.use(express.static(frontendDir));
 
 // --- API Routes ---
+
+// GET /api/config - runtime config (e.g. title-card mode)
+app.get('/api/config', (req, res) => {
+    res.json({ titleCard: titleCardMode });
+});
 
 // GET /api/images - List images from metadata
 app.get('/api/images', async (req, res) => {

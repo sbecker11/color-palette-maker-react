@@ -16,6 +16,7 @@ import {
   normalizeMetaPaletteRegion,
 } from './AppHelpers';
 import Header from './components/Header';
+import TitleCardOverlay from './components/TitleCardOverlay';
 import UploadForm from './components/UploadForm';
 import ImageLibrary from './components/ImageLibrary';
 import PaletteDisplay from './components/PaletteDisplay';
@@ -53,6 +54,7 @@ function App() {
   const { regions, isDeleteRegionMode, regionsDetecting } = regionsState;
   const [showMatchPaletteSwatches, setShowMatchPaletteSwatches] = useState(false);
   const [pairingsNeeded, setPairingsNeeded] = useState(false);
+  const [showTitleCard, setShowTitleCard] = useState(false);
   // One palette swatch may map to zero or more overlays (sync highlight between panel swatch and image overlays)
   const [hoveredSwatchIndex, setHoveredSwatchIndex] = useState(null);
 
@@ -147,6 +149,14 @@ function App() {
   useEffect(() => {
     loadImages();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: load once on app init
+  }, []);
+
+  useEffect(() => {
+    api.getConfig().then((data) => {
+      if (data?.titleCard) {
+        setShowTitleCard(true);
+      }
+    });
   }, []);
 
   // Update selected image when images change (e.g. after upload)
@@ -663,7 +673,14 @@ function App() {
 
   return (
     <>
-      <Header theme={theme} onToggleTheme={toggleTheme} />
+      {showTitleCard && (
+        <TitleCardOverlay onClose={() => setShowTitleCard(false)} />
+      )}
+      <Header
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onTitleClick={() => setShowTitleCard(true)}
+      />
       <main>
         <div id="leftPanel">
           <UploadForm onSubmit={handleUpload} message={message} />

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import UploadForm from './UploadForm';
 
 describe('UploadForm', () => {
@@ -92,6 +92,7 @@ describe('UploadForm', () => {
     const urlInput = screen.getByLabelText(/image url/i);
     fireEvent.change(urlInput, { target: { value: 'https://example.com/img.jpg' } });
     fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /submit/i })).toHaveTextContent('Submit'));
     expect(urlInput).toHaveValue('https://example.com/img.jpg');
   });
 

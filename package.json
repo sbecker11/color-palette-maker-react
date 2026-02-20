@@ -22,9 +22,12 @@
   "main": "server.js",
   "scripts": {
     "start": "node scripts/run-with-venv.js node server.js",
+    "start:title-card": "node scripts/run-with-venv.js node server.js --title-card",
     "build": "cd client && npm run build",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:title-card": "concurrently \"npm run dev:server:title-card\" \"npm run dev:client\"",
     "dev:server": "node scripts/run-with-venv.js nodemon server.js",
+    "dev:server:title-card": "node scripts/run-with-venv.js nodemon server.js -- --title-card",
     "dev:client": "cd client && npm run dev",
     "test": "cd client && npm run test",
     "test:coverage": "cd client && npm run test:coverage",
