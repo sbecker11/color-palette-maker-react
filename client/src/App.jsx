@@ -360,7 +360,7 @@ function App() {
         showMessage('Network error clearing palette.', true);
       }
     }
-  }, [selectedMeta, showMessage]);
+  }, [selectedMeta, showMessage, showMatchPaletteSwatches]);
 
   const handleToggleSamplingMode = useCallback(() => {
     if (!selectedMeta) {

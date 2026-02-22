@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { rgbToHex, formatHexDisplay } from '../utils';
 import { shrinkPolygon, polygonToPath } from '../imageViewerGeometry';
 
@@ -37,8 +37,10 @@ function ImageViewer({
   const onSampledColorChangeRef = useRef(onSampledColorChange);
   const isSamplingModeRef = useRef(isSamplingMode);
 
-  onSampledColorChangeRef.current = onSampledColorChange;
-  isSamplingModeRef.current = isSamplingMode;
+  useEffect(() => {
+    onSampledColorChangeRef.current = onSampledColorChange;
+    isSamplingModeRef.current = isSamplingMode;
+  }, [onSampledColorChange, isSamplingMode]);
 
   const getCanvasCoords = (event) => {
     const imgElement = imgRef.current;
@@ -78,33 +80,6 @@ function ImageViewer({
 
     return { x, y };
   };
-
-  const sampleColorAtEvent = useCallback((event) => {
-    if (!isSamplingMode) return;
-
-    const coords = getCanvasCoords(event);
-    if (!coords) {
-      onSampledColorChange?.(null);
-      return;
-    }
-
-    const ctx = canvasCtxRef.current;
-    if (!ctx) {
-      onSampledColorChange?.(null);
-      return;
-    }
-
-    try {
-      const pixelData = ctx.getImageData(coords.x, coords.y, 1, 1).data;
-      const r = pixelData[0];
-      const g = pixelData[1];
-      const b = pixelData[2];
-      const hex = rgbToHex(r, g, b);
-      onSampledColorChange?.(hex);
-    } catch {
-      onSampledColorChange?.(null);
-    }
-  }, [isSamplingMode, onSampledColorChange]);
 
   // Exit Deleting regions mode when clicking outside the palette image div; clears checkbox and resets cursor.
   // Exclude palette panel so checkbox toggle handles exit via onChange.
@@ -191,7 +166,7 @@ function ImageViewer({
     } catch {
       onSampledColorChangeRef.current?.(null);
     }
-  }, [isSamplingMode]);
+  }, [isSamplingMode, onSampledColorChange]);
 
   // Draw image to hidden canvas when imageUrl changes
   useEffect(() => {
