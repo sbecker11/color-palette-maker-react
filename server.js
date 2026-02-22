@@ -269,6 +269,16 @@ app.post('/api/regions/:filename', express.json(), async (req, res) => {
             } else {
                 allMetadata[idx].paletteRegion = [];
             }
+            // Persist region detection strategy and params for this image
+            const regionParams = {};
+            if (req.body?.adaptiveBlockSize != null) regionParams.adaptiveBlockSize = req.body.adaptiveBlockSize;
+            if (req.body?.adaptiveC != null) regionParams.adaptiveC = req.body.adaptiveC;
+            if (req.body?.cannyLow != null) regionParams.cannyLow = req.body.cannyLow;
+            if (req.body?.cannyHigh != null) regionParams.cannyHigh = req.body.cannyHigh;
+            if (req.body?.colorClusters != null) regionParams.colorClusters = req.body.colorClusters;
+            if (req.body?.watershedDistRatio != null) regionParams.watershedDistRatio = req.body.watershedDistRatio;
+            allMetadata[idx].regionStrategy = strategy;
+            allMetadata[idx].regionParams = regionParams;
             await metadataHandler.rewriteMetadata(allMetadata);
         }
         res.json({ success: true, ...result, paletteRegion });
@@ -642,7 +652,9 @@ app.post('/api/images/:filename/duplicate', async (req, res) => {
             regionLabels: Array.isArray(sourceMeta.regionLabels) && sourceMeta.regionLabels.length === (sourceMeta.regions?.length ?? 0)
                 ? [...sourceMeta.regionLabels]
                 : (Array.isArray(sourceMeta.regions) ? sourceMeta.regions.map((_, i) => String(i).padStart(2, '0')) : []),
-            paletteRegion: JSON.parse(JSON.stringify(getPaletteRegion(sourceMeta)))
+            paletteRegion: JSON.parse(JSON.stringify(getPaletteRegion(sourceMeta))),
+            regionStrategy: sourceMeta.regionStrategy ?? 'default',
+            regionParams: sourceMeta.regionParams ? { ...sourceMeta.regionParams } : {}
         };
 
         // 4. Append (puts at end of file; GET reverses so new item appears at top)

@@ -580,14 +580,28 @@ function App() {
       if (result.success && result.regions) {
         const newRegions = result.regions;
         const newPaletteRegions = Array.isArray(result.paletteRegion) ? result.paletteRegion : [];
+        const regionParams = { ...params };
         dispatchRegions({ type: 'SET_REGIONS', payload: newRegions });
         setSelectedMeta((prev) =>
-          prev ? { ...applyRegionsToMeta(prev, newRegions), paletteRegion: newPaletteRegions } : prev
+          prev
+            ? {
+                ...applyRegionsToMeta(prev, newRegions),
+                paletteRegion: newPaletteRegions,
+                regionStrategy: strategy,
+                regionParams,
+              }
+            : prev
         );
         setImages((prev) =>
           prev.map((m) =>
             getFilenameFromMeta(m) === filename
-              ? { ...m, ...applyRegionsToMeta(m, newRegions), paletteRegion: newPaletteRegions }
+              ? {
+                  ...m,
+                  ...applyRegionsToMeta(m, newRegions),
+                  paletteRegion: newPaletteRegions,
+                  regionStrategy: strategy,
+                  regionParams,
+                }
               : m
           )
         );

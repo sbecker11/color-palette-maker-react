@@ -27,6 +27,36 @@ pip install -r requirements.txt
 
 The development and production build scripts activate the Python venv before starting the backend server, so region detection works in both environments. If you run the server manually, activate the venv first or the server will auto-detect `./venv` when present.
 
+**Optional:** Copy `.env.example` to `.env` to override port or other settings. See [Environment Variables](#environment-variables) for details.
+
+---
+
+## When to Run Full Build vs Vite-Only Dev
+
+| Change type | Full build required? | Notes |
+|-------------|----------------------|-------|
+| React components, CSS, JS (client code) | No | Vite HMR updates the browser automatically. Run `npm run dev` (or `npm run dev:client` if server is already running). |
+| Server code (`server.js`, `metadata_handler.js`, `image_processor.js`) | No for `npm run dev` | `nodemon` restarts the server on change. Use `npm run dev` or `npm run dev:server`. |
+| Python scripts (`scripts/detect_regions.py`) | No | Server invokes the script at runtime; edits take effect on next region detection. |
+| Root `package.json` (scripts, deps) | Yes | Run `npm install` and restart. |
+| Client `package.json` (deps) | Yes | Run `cd client && npm install` and restart `npm run dev:client`. |
+| `vite.config.js` | Yes | Restart `npm run dev:client`. |
+| `.env` | No | Restart the server to pick up env changes. |
+| Production deploy | Yes | Run `npm run build` then `npm start`. |
+
+**Summary:** For typical frontend-only changes (components, styles, client logic), run `npm run dev` and edit; Vite handles updates without a full build. For server changes, nodemon restarts the server. Only dependency changes or production builds require `npm run build`.
+
+### Automated check
+
+Run `npm run check` to see what to do based on changed files since last commit:
+
+```bash
+npm run check        # dev suggestions (HMR, restart server, etc.)
+npm run check:prod   # include "run npm run build" when client changed
+```
+
+Run `npm run ready` to lint, test, and then run the check (useful before commit or push).
+
 ---
 
 ## Development Mode
@@ -232,11 +262,30 @@ To regenerate a file tree from the repo: from the project root run `find . -not 
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `DETECT_REGIONS_PYTHON` | Path to Python executable for region detection. Defaults to `./venv/bin/python` if venv exists, else `python3`. |
-| `VIRTUAL_ENV` | Set automatically when venv is activated. |
-| `PORT` | Server port. Defaults to 3000. |
+The server loads variables from `.env` in the project root (via `dotenv`). Create `.env` before starting the app.
+
+### Setup
+
+```bash
+cp .env.example .env
+# Edit .env if needed; defaults work for local dev
+```
+
+### Dev vs prod
+
+Same variables apply to both. For local dev, defaults are usually fine. For production you may want to override `PORT` or `DETECT_REGIONS_PYTHON` if Python lives elsewhere.
+
+### Variable reference
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `PORT` | No | Server port. Defaults to 3000. |
+| `DETECT_REGIONS_PYTHON` | No | Path to Python executable for region detection. Defaults to `./venv/bin/python` if venv exists, else `python3`. |
+| `VIRTUAL_ENV` | No | Set automatically when venv is activated. |
+| `MIN_LUMINANCE_THRESHOLD` | No | Palette luminance floor (0–255). Default 25. Pixels below this are excluded from K-means. |
+| `MAX_LUMINANCE_THRESHOLD` | No | Palette luminance ceiling (0–255). Default 185. Pixels above this are excluded. Use 0 and 255 to include black/white. |
+
+> **Note:** `.env` is gitignored. Never commit secrets. For production, set variables in your deploy environment or use the same `.env` approach on the host.
 
 ---
 

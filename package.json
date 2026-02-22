@@ -31,7 +31,10 @@
     "open:app": "open http://localhost:3000",
     "start:open": "npm run start & npx wait-on -t 60000 http://localhost:3000/api/config && npm run open:app",
     "open:coverage": "open \"$(ls -t client/coverage-reports/*.html 2>/dev/null | head -1)\"",
-    "build:with-coverage": "npm run build && npm run test:coverage"
+    "build:with-coverage": "npm run build && npm run test:coverage",
+    "check": "node scripts/check-build-needed.js",
+    "check:prod": "node scripts/check-build-needed.js --prod",
+    "ready": "npm test && npm run check"
   },
   "dependencies": {
     "axios": "^1.7.2",

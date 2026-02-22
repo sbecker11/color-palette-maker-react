@@ -322,3 +322,5 @@ Metadata is stored in `image_metadata.jsonl`. Each line is a JSON object represe
 | `regions` | number[][][] | Polygon arrays `[[x,y], ...]` per region |
 | `regionLabels` | string[] | Labels per region (00, 01, …) |
 | `paletteRegion` | object[] | `{ hex, regionColor, x, y }` per region (nearest palette swatch) |
+| `regionStrategy` | string | Last detection strategy used: `default`, `adaptive`, `otsu`, `canny`, `color`, `watershed` |
+| `regionParams` | object | Strategy-specific params (e.g. `adaptiveBlockSize`, `cannyLow`) saved when regions were detected |
