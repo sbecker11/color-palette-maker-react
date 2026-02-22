@@ -10,6 +10,15 @@ const CURSOR_DELETE_X = `url("data:image/svg+xml,${encodeURIComponent(
 // Target radius in screen pixels to match #palette-display swatch circles (16px)
 // Correction factor: observed 18px without it, so scale down by 16/18
 const SWATCH_RADIUS_PX = 16 * (16 / 18);
+// Target font sizes in screen pixels for overlay text (scale with overlay like circles)
+const REGION_LABEL_FONT_PX = 12;
+const REGION_LABEL_FONT_HOVER_PX = 15;
+const REGION_HEX_FONT_PX = 13;
+const REGION_HEX_FONT_HOVER_PX = 16;
+const SWATCH_LABEL_FONT_PX = 13;
+const SWATCH_LABEL_FONT_HOVER_PX = 16;
+const SWATCH_HEX_FONT_PX = 14;
+const SWATCH_HEX_FONT_HOVER_PX = 17;
 
 const ImageViewer = forwardRef(function ImageViewer({
   imageUrl,
@@ -211,7 +220,8 @@ const ImageViewer = forwardRef(function ImageViewer({
     img.src = imageUrl;
   }, [imageUrl]);
 
-  // Measure overlay SVG to compute scale (viewBox units per screen px) for circle sizing
+  // Measure overlay SVG to compute scale (viewBox units per screen px) for circle sizing.
+  // Include useFillMode so we re-observe when layout switches (different SVG DOM node).
   const hasOverlay = (regions?.length > 0) || (paletteRegion?.length > 0);
   useEffect(() => {
     if (!hasOverlay || imageSize.w <= 0 || imageSize.h <= 0) {
@@ -233,7 +243,7 @@ const ImageViewer = forwardRef(function ImageViewer({
       ro.disconnect();
       queueMicrotask(() => setOverlayScale(0));
     };
-  }, [hasOverlay, imageSize.w, imageSize.h]);
+  }, [hasOverlay, imageSize.w, imageSize.h, useFillMode]);
 
   // When container width > image width, use fill (cover) instead of contain
   useEffect(() => {
@@ -405,10 +415,11 @@ const ImageViewer = forwardRef(function ImageViewer({
                 })}
                 {paletteRegion.map((regionData, i) => {
                   const r = overlayScale > 0 ? SWATCH_RADIUS_PX / overlayScale : SWATCH_RADIUS_PX;
+                  const scaledFont = (px) => (overlayScale > 0 ? px / overlayScale : px);
                   const swatchOffset = r * (28 / 15);
                   const swatchCx = regionData.x + swatchOffset;
                   const swatchCy = regionData.y - swatchOffset;
-                  const labelOffset = r + 8;
+                  const labelOffset = r + (overlayScale > 0 ? 8 / overlayScale : 8);
                   const regionColor = regionData.regionColor ?? regionData.hex;
                   const paletteColor = regionData.hex;
                   // One palette swatch may map to zero or more overlays (multiple regions can share the same nearest color)
@@ -420,8 +431,8 @@ const ImageViewer = forwardRef(function ImageViewer({
                   const isSwatchMatchHighlighted = showMatchPaletteSwatches && hoveredSwatchIndex === paletteIdx;
                   const isRegionHighlighted = isRegionHovered || isSwatchMatchHighlighted;
                   const isOverlayHighlighted = (hoveredSwatchIndex === paletteIdx) || (showMatchPaletteSwatches && isRegionHovered);
-                  const regionHexFontSize = isRegionHighlighted ? 16 : 13;
-                  const swatchHexFontSize = (isRegionHighlighted || isOverlayHighlighted) ? 17 : 14;
+                  const regionHexFontSize = scaledFont(isRegionHighlighted ? REGION_HEX_FONT_HOVER_PX : REGION_HEX_FONT_PX);
+                  const swatchHexFontSize = scaledFont((isRegionHighlighted || isOverlayHighlighted) ? SWATCH_HEX_FONT_HOVER_PX : SWATCH_HEX_FONT_PX);
                   const baseStyle = (fontSize) => ({ textAnchor: 'middle', dominantBaseline: 'central', fontSize, fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Monaco, "Courier New", monospace' });
                   const dualText = (h, v, t, hovered, fontSize) => (
                     <>
@@ -429,8 +440,8 @@ const ImageViewer = forwardRef(function ImageViewer({
                       <text x={h - 1} y={v - 1} {...baseStyle(fontSize)} fill={hovered ? 'rgba(255, 255, 200, 1)' : 'white'}>{t}</text>
                     </>
                   );
-                  const regionLabelFontSize = isRegionHighlighted ? 15 : 12;
-                  const swatchLabelFontSize = (isRegionHighlighted || isOverlayHighlighted) ? 16 : 13;
+                  const regionLabelFontSize = scaledFont(isRegionHighlighted ? REGION_LABEL_FONT_HOVER_PX : REGION_LABEL_FONT_PX);
+                  const swatchLabelFontSize = scaledFont((isRegionHighlighted || isOverlayHighlighted) ? SWATCH_LABEL_FONT_HOVER_PX : SWATCH_LABEL_FONT_PX);
                   const regionLabelStyle = { textAnchor: 'middle', dominantBaseline: 'central', fontSize: regionLabelFontSize, fontWeight: 600 };
                   return (
                     <g
@@ -457,7 +468,7 @@ const ImageViewer = forwardRef(function ImageViewer({
                         className="region-circle"
                         aria-hidden="true"
                       />
-                      {showMatchPaletteSwatches && (
+                      {showMatchPaletteSwatches && regionData.hex != null && (
                         <>
                           <circle
                             cx={swatchCx}
@@ -605,10 +616,11 @@ const ImageViewer = forwardRef(function ImageViewer({
                 })}
                 {paletteRegion.map((regionData, i) => {
                   const r = overlayScale > 0 ? SWATCH_RADIUS_PX / overlayScale : SWATCH_RADIUS_PX;
+                  const scaledFont = (px) => (overlayScale > 0 ? px / overlayScale : px);
                   const swatchOffset = r * (28 / 15);
                   const swatchCx = regionData.x + swatchOffset;
                   const swatchCy = regionData.y - swatchOffset;
-                  const labelOffset = r + 8;
+                  const labelOffset = r + (overlayScale > 0 ? 8 / overlayScale : 8);
                   const regionColor = regionData.regionColor ?? regionData.hex;
                   const paletteColor = regionData.hex;
                   const paletteIdx = palette.findIndex(
@@ -619,8 +631,8 @@ const ImageViewer = forwardRef(function ImageViewer({
                   const isSwatchMatchHighlighted = showMatchPaletteSwatches && hoveredSwatchIndex === paletteIdx;
                   const isRegionHighlighted = isRegionHovered || isSwatchMatchHighlighted;
                   const isOverlayHighlighted = (hoveredSwatchIndex === paletteIdx) || (showMatchPaletteSwatches && isRegionHovered);
-                  const regionHexFontSize = isRegionHighlighted ? 16 : 13;
-                  const swatchHexFontSize = (isRegionHighlighted || isOverlayHighlighted) ? 17 : 14;
+                  const regionHexFontSize = scaledFont(isRegionHighlighted ? REGION_HEX_FONT_HOVER_PX : REGION_HEX_FONT_PX);
+                  const swatchHexFontSize = scaledFont((isRegionHighlighted || isOverlayHighlighted) ? SWATCH_HEX_FONT_HOVER_PX : SWATCH_HEX_FONT_PX);
                   const baseStyle = (fontSize) => ({ textAnchor: 'middle', dominantBaseline: 'central', fontSize, fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Monaco, "Courier New", monospace' });
                   const dualText = (h, v, t, hovered, fontSize) => (
                     <>
@@ -628,8 +640,8 @@ const ImageViewer = forwardRef(function ImageViewer({
                       <text x={h - 1} y={v - 1} {...baseStyle(fontSize)} fill={hovered ? 'rgba(255, 255, 200, 1)' : 'white'}>{t}</text>
                     </>
                   );
-                  const regionLabelFontSize = isRegionHighlighted ? 15 : 12;
-                  const swatchLabelFontSize = (isRegionHighlighted || isOverlayHighlighted) ? 16 : 13;
+                  const regionLabelFontSize = scaledFont(isRegionHighlighted ? REGION_LABEL_FONT_HOVER_PX : REGION_LABEL_FONT_PX);
+                  const swatchLabelFontSize = scaledFont((isRegionHighlighted || isOverlayHighlighted) ? SWATCH_LABEL_FONT_HOVER_PX : SWATCH_LABEL_FONT_PX);
                   const regionLabelStyle = { textAnchor: 'middle', dominantBaseline: 'central', fontSize: regionLabelFontSize, fontWeight: 600 };
                   return (
                     <g
@@ -656,7 +668,7 @@ const ImageViewer = forwardRef(function ImageViewer({
                         className="region-circle"
                         aria-hidden="true"
                       />
-                      {showMatchPaletteSwatches && (
+                      {showMatchPaletteSwatches && regionData.hex != null && (
                         <>
                           <circle
                             cx={swatchCx}

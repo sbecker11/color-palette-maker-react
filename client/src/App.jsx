@@ -346,9 +346,17 @@ function App() {
     if (!selectedMeta) return;
     const filename = getFilenameFromMeta(selectedMeta);
     const newPalette = [];
-    const updatedMeta = applyPaletteToMeta(selectedMeta, newPalette);
+    // Keep region display (x, y, regionColor) but strip palette mapping (hex) so swatch overlays are cleared
+    const clearedPaletteRegion = (selectedMeta.paletteRegion ?? []).map(({ x, y, regionColor, hex }) =>
+      ({ x, y, regionColor: regionColor ?? hex })
+    );
+    const updatedMeta = { ...applyPaletteToMeta(selectedMeta, newPalette), paletteRegion: clearedPaletteRegion };
     setSelectedMeta(updatedMeta);
-    setImages((prev) => applyPaletteToImages(prev, filename, newPalette));
+    setImages((prev) =>
+      applyPaletteToImages(prev, filename, newPalette).map((m) =>
+        getFilenameFromMeta(m) === filename ? { ...m, paletteRegion: clearedPaletteRegion } : m
+      )
+    );
     if (filename) {
       try {
         const result = await api.savePalette(filename, newPalette, []);
