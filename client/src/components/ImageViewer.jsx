@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 import { rgbToHex, formatHexDisplay } from '../utils';
 import { shrinkPolygon, polygonToPath } from '../imageViewerGeometry';
 
@@ -7,12 +7,12 @@ const CURSOR_DELETE_X = `url("data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path stroke="#000" stroke-width="2" d="M4 4l12 12M16 4L4 16" fill="none"/></svg>'
 )}") 10 10, auto`;
 
-function ImageViewer({
+const ImageViewer = forwardRef(function ImageViewer({
   imageUrl,
   imageAlt,
   isSamplingMode,
   onSampledColorChange,
-  onDoubleClickAddColor,
+  onAddColorClick,
   onExitAddingSwatchesMode,
   palettePanelRef,
   regions = [],
@@ -26,7 +26,7 @@ function ImageViewer({
   swatchLabels = [],
   hoveredSwatchIndex = null,
   onSwatchHover,
-}) {
+}, ref) {
   const imgRef = useRef(null);
   const canvasRef = useRef(null);
   const canvasCtxRef = useRef(null);
@@ -230,7 +230,7 @@ function ImageViewer({
     }
   };
 
-  const handleDoubleClick = (event) => {
+  const handleAddColorClick = (event) => {
     event.preventDefault();
     event.stopPropagation();
     if (!isSamplingMode) return;
@@ -247,7 +247,7 @@ function ImageViewer({
       const g = pixelData[1];
       const b = pixelData[2];
       const hex = rgbToHex(r, g, b).toLowerCase();
-      onDoubleClickAddColor?.(hex);
+      onAddColorClick?.(hex);
     } catch {
       // ignore (e.g. CORS-tainted canvas)
     }
@@ -256,7 +256,7 @@ function ImageViewer({
   const hasImage = !!imageUrl;
 
   return (
-    <div id="imageViewerContainer">
+    <div id="imageViewerContainer" ref={ref}>
       <div id="imageViewer" ref={viewerRef}>
         {!hasImage && (
           <span className="placeholder">Select an image from the list</span>
@@ -284,7 +284,7 @@ function ImageViewer({
               }}
               onMouseMove={handleMouseMove}
               onMouseLeave={handleMouseLeave}
-              onDoubleClick={handleDoubleClick}
+              onClick={handleAddColorClick}
             />
             {((regions?.length > 0) || (paletteRegion?.length > 0)) && imageSize.w > 0 && (
               <svg
@@ -469,6 +469,6 @@ function ImageViewer({
       </div>
     </div>
   );
-}
+});
 
 export default ImageViewer;

@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Extract color palettes from images using K-means clustering with luminance filtering and CIEDE2000 perceptual distance
 - Detect image regions with OpenCV (Python subprocess)
-- Manual color sampling: double-click on image to add swatch
+- Manual color sampling: click on image to add swatch
 - Export palettes as JSON
 - Light/dark theme support with CSS custom properties
 - Error boundary for graceful handling of React rendering errors

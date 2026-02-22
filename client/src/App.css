@@ -96,6 +96,7 @@ header h1 {
 main {
   display: flex;
   flex: 1;
+  min-height: 0;
   padding: var(--gap);
   gap: var(--gap);
   margin-top: var(--gap);
@@ -103,10 +104,10 @@ main {
 
 #leftPanel {
   width: 380px;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: var(--gap);
-  overflow-y: auto;
   margin-top: 0;
 }
 
@@ -141,8 +142,8 @@ main {
   border: 1px solid var(--border-color);
   padding: var(--gap);
   background-color: var(--bg-color);
-  flex-grow: 1;
-  overflow-y: auto;
+  flex: 1 1 0;
+  min-height: 0;
   margin-top: 0;
   display: flex;
   flex-direction: column;
@@ -152,12 +153,16 @@ main {
 #storedImagesSection h2 {
   margin-top: 0;
   margin-bottom: 0;
+  flex-shrink: 0;
 }
 
 #fileList {
   list-style: none;
   padding: 0;
   margin: 0;
+  overflow-y: auto;
+  flex: 1 1 0;
+  min-height: 0;
 }
 #fileList li {
   margin-bottom: var(--gap);
@@ -427,6 +432,8 @@ input[type="file"] {
 }
 #metadataDisplay a {
   color: var(--link-color);
+  overflow-wrap: break-word;
+  word-break: break-all;
 }
 
 #themeToggleButton {
@@ -658,8 +665,46 @@ body.sampling-active #imageViewer img {
   cursor: crosshair;
 }
 
+.source-input-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  margin-top: var(--gap);
+  margin-bottom: 0;
+  flex-wrap: nowrap;
+}
+.source-input-row #urlInputGroup,
+.source-input-row #fileInputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--gap) * 0.5);
+  min-width: 0;
+  flex-shrink: 1;
+}
+.source-input-row #urlInputGroup.hidden,
+.source-input-row #fileInputGroup.hidden {
+  display: none !important;
+}
+.source-input-row #urlInputGroup input[type="text"] {
+  width: 20em;
+  max-width: 100%;
+  margin-top: 0;
+}
+.source-input-row #fileInputGroup input[type="file"] {
+  width: 12em;
+  margin-top: 0;
+}
+.source-input-row > button {
+  flex-shrink: 0;
+  font-size: 0.8em;
+  padding: 2px 5px;
+}
 .form-actions {
   display: flex;
   align-items: center;
   margin-top: var(--gap);
+}
+.form-actions > button {
+  font-size: 0.8em;
+  padding: 2px 5px;
 }

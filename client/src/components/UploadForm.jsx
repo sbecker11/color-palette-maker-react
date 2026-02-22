@@ -66,40 +66,40 @@ function UploadForm({ onSubmit, message }) {
           <label htmlFor="uploadTypeFile">Upload Local File</label>
         </div>
 
-        <div
-          id="fileInputGroup"
-          className={`input-group ${uploadType === 'file' ? '' : 'hidden'}`}
-        >
-          <label htmlFor="imageFile">Select File:</label>
-          <br />
-          <input
-            type="file"
-            id="imageFile"
-            name="imageFile"
-            accept="image/*"
-            onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-          />
-        </div>
-
-        <div
-          id="urlInputGroup"
-          className={`input-group ${uploadType === 'url' ? '' : 'hidden'}`}
-        >
-          <label htmlFor="imageUrl">Image URL:</label>
-          <br />
-          <input
-            type="text"
-            id="imageUrl"
-            name="imageUrl"
-            size="50"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-          />
-        </div>
-        <div className="form-actions">
+        <div className="source-input-row">
+          <div
+            id="urlInputGroup"
+            className={uploadType === 'url' ? '' : 'hidden'}
+          >
+            <input
+              type="text"
+              id="imageUrl"
+              name="imageUrl"
+              aria-label="Image URL"
+              placeholder="Image URL"
+              size="30"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+            />
+          </div>
+          <div
+            id="fileInputGroup"
+            className={uploadType === 'file' ? '' : 'hidden'}
+          >
+            <input
+              type="file"
+              id="imageFile"
+              name="imageFile"
+              aria-label="Select File"
+              accept="image/*"
+              onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+            />
+          </div>
           <button type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Processing...' : 'Submit'}
           </button>
+        </div>
+        <div className="form-actions">
           <div
             id="messageArea"
             className={`messageArea ${message?.isError ? 'message-error' : 'message-success'}`}

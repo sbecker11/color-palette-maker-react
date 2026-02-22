@@ -12,8 +12,16 @@ const K_CLUSTERS = 7;
 const FINAL_PALETTE_SIZE = 5;
 
 // Luminance thresholds to filter out near-black and near-white clusters.
-const MIN_LUMINANCE_THRESHOLD = 25;
-const MAX_LUMINANCE_THRESHOLD = 185;
+// Override via .env: MIN_LUMINANCE_THRESHOLD (0-255), MAX_LUMINANCE_THRESHOLD (0-255)
+function parseLuminanceEnv(name, defaultVal) {
+    const v = process.env[name];
+    if (v == null || v === '') return defaultVal;
+    const n = parseInt(v, 10);
+    if (Number.isNaN(n) || n < 0 || n > 255) return defaultVal;
+    return n;
+}
+const MIN_LUMINANCE_THRESHOLD = parseLuminanceEnv('MIN_LUMINANCE_THRESHOLD', 25);
+const MAX_LUMINANCE_THRESHOLD = parseLuminanceEnv('MAX_LUMINANCE_THRESHOLD', 185);
 
 // CIEDE2000 delta-E threshold for merging centroids (e.g., when image has fewer distinct colors than k).
 const COLOR_SIMILARITY_THRESHOLD = 5;
@@ -251,17 +259,18 @@ function hexToRgb(hex) {
 }
 
 /**
- * For each region, compute centroid and average color of pixels inside.
- * Find nearest palette color (deltaE). Return [{ hex, x, y }, ...].
+ * For each region, compute centroid (geometric center) and average color of pixels inside.
+ * When palette is provided, find nearest palette color (deltaE) for hex; otherwise hex = regionColor.
+ * Return [{ hex, regionColor, x, y }, ...].
  * @param {string} imagePath - Path to image
  * @param {number[][][]} regions - Polygons
- * @param {string[]} palette - Hex strings
- * @returns {Promise<{ hex: string, x: number, y: number }[]>}
+ * @param {string[]} [palette] - Optional. Hex strings. If empty or omitted, hex = regionColor.
+ * @returns {Promise<{ hex: string, regionColor: string, x: number, y: number }[]>}
  */
 async function computeRegionColorMarkers(imagePath, regions, palette) {
-    if (!regions?.length || !palette?.length) return [];
-    const paletteRgb = palette.map(hexToRgb).filter(Boolean);
-    if (paletteRgb.length === 0) return [];
+    if (!regions?.length) return [];
+    const paletteRgb = (palette && palette.length > 0) ? palette.map(hexToRgb).filter(Boolean) : [];
+    const hasPalette = paletteRgb.length > 0;
 
     const pixelsData = await new Promise((resolve, reject) => {
         getPixels(imagePath, (err, pixels) => {
@@ -270,8 +279,6 @@ async function computeRegionColorMarkers(imagePath, regions, palette) {
         });
     });
     const shape = pixelsData.shape || [];
-    // get-pixels returns shape [rows, columns, channels] = [height, width, 4]
-    const height = shape[0] != null ? shape[0] : 1;
     const width = shape[1] != null ? shape[1] : 1;
     const pixelDataArray = pixelsData.data;
 
@@ -281,7 +288,6 @@ async function computeRegionColorMarkers(imagePath, regions, palette) {
         let sumR = 0, sumG = 0, sumB = 0, count = 0;
         for (let i = 0; i < pixelDataArray.length; i += 4) {
             const pixelIndex = Math.floor(i / 4);
-            // row-major: pixelIndex = row * width + col => x = col, y = row
             const px = pixelIndex % width;
             const py = Math.floor(pixelIndex / width);
             if (!pointInPolygon(px, py, poly)) continue;
@@ -292,22 +298,26 @@ async function computeRegionColorMarkers(imagePath, regions, palette) {
             count++;
         }
         const [cx, cy] = polygonCentroid(poly);
-        let nearestHex = palette[0];
         let regionColorHex = '#888888';
+        let hex = regionColorHex;
         if (count > 0) {
             const avg = { R: sumR / count, G: sumG / count, B: sumB / count };
             regionColorHex = rgbToHex([Math.round(avg.R), Math.round(avg.G), Math.round(avg.B)]);
-            let minD = Infinity;
-            for (let p = 0; p < paletteRgb.length; p++) {
-                const d = colorDiff.diff(avg, paletteRgb[p]);
-                if (d < minD) {
-                    minD = d;
-                    nearestHex = palette[p];
+            if (hasPalette) {
+                let minD = Infinity;
+                for (let p = 0; p < paletteRgb.length; p++) {
+                    const d = colorDiff.diff(avg, paletteRgb[p]);
+                    if (d < minD) {
+                        minD = d;
+                        hex = palette[p];
+                    }
                 }
+            } else {
+                hex = regionColorHex;
             }
         }
         markers.push({
-            hex: nearestHex,
+            hex,
             regionColor: regionColorHex,
             x: Math.round(cx),
             y: Math.round(cy)

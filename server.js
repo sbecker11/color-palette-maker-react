@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const { spawn } = require('child_process');
@@ -233,7 +234,7 @@ app.post('/api/regions/:filename', async (req, res) => {
             });
             proc.on('error', reject);
         });
-        // Persist regions to metadata and compute palette region data if palette exists
+        // Persist regions to metadata and compute region markers (centroid + average color) for each region
         const allMetadata = await metadataHandler.readMetadata();
         const idx = allMetadata.findIndex((e) => path.basename(e.cachedFilePath || '') === filename);
         let paletteRegion = [];
@@ -241,13 +242,17 @@ app.post('/api/regions/:filename', async (req, res) => {
             const regions = result.regions || [];
             allMetadata[idx].regions = regions;
             allMetadata[idx].regionLabels = regions.map((_, i) => String(i).padStart(2, '0'));
-            const palette = allMetadata[idx].colorPalette;
-            if (Array.isArray(palette) && palette.length > 0 && regions.length > 0) {
+            if (regions.length > 0) {
                 try {
-                    paletteRegion = await imageProcessor.computeRegionColorMarkers(imagePath, regions, palette);
+                    const palette = allMetadata[idx].colorPalette;
+                    paletteRegion = await imageProcessor.computeRegionColorMarkers(
+                        imagePath, regions,
+                        Array.isArray(palette) && palette.length > 0 ? palette : []
+                    );
                     allMetadata[idx].paletteRegion = paletteRegion;
                 } catch (mrErr) {
-                    console.warn('[API POST /regions] Could not compute palette region data:', mrErr);
+                    console.warn('[API POST /regions] Could not compute region markers:', mrErr);
+                    allMetadata[idx].paletteRegion = [];
                 }
             } else {
                 allMetadata[idx].paletteRegion = [];
@@ -471,18 +476,21 @@ app.put('/api/metadata/:filename', express.json(), async (req, res) => {
         allMetadata[imageIndex].regionLabels = validLabels
             ? regionLabels
             : regions.map((_, i) => String(i).padStart(2, '0'));
-        // Recompute palette region data when regions change and we have a palette
-        const palette = allMetadata[imageIndex].colorPalette;
-        if (Array.isArray(palette) && palette.length > 0 && regions.length > 0) {
+        // Recompute region markers (centroid + average color) when regions change
+        if (regions.length > 0) {
             try {
                 const imagePath = path.join(uploadsDir, filename);
                 if (fs.existsSync(imagePath)) {
-                    allMetadata[imageIndex].paletteRegion = await imageProcessor.computeRegionColorMarkers(imagePath, regions, palette);
+                    const palette = allMetadata[imageIndex].colorPalette;
+                    allMetadata[imageIndex].paletteRegion = await imageProcessor.computeRegionColorMarkers(
+                        imagePath, regions,
+                        Array.isArray(palette) && palette.length > 0 ? palette : []
+                    );
                 } else {
                     allMetadata[imageIndex].paletteRegion = [];
                 }
             } catch (mrErr) {
-                console.warn('[API PUT /metadata] Could not recompute palette region data:', mrErr);
+                console.warn('[API PUT /metadata] Could not recompute region markers:', mrErr);
                 allMetadata[imageIndex].paletteRegion = [];
             }
         } else {

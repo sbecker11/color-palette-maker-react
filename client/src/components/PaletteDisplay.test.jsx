@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import PaletteDisplay from './PaletteDisplay';
 
 describe('PaletteDisplay', () => {
@@ -64,11 +64,11 @@ describe('PaletteDisplay', () => {
     expect(screen.getByRole('option', { name: '(Del)ete Palette' })).toBeInTheDocument();
   });
 
-  it('calls onDelete when (Del)ete is selected from dropdown', () => {
+  it('calls onDelete when (Del)ete is selected from dropdown', async () => {
     render(<PaletteDisplay {...defaultProps} />);
     const select = screen.getByRole('combobox', { name: 'Choose action' });
     fireEvent.change(select, { target: { value: 'delete' } });
-    expect(defaultProps.onDelete).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(defaultProps.onDelete).toHaveBeenCalledTimes(1));
   });
 
   it('calls onDuplicate when (Dup)licate is selected from dropdown', () => {
@@ -139,6 +139,13 @@ describe('PaletteDisplay', () => {
     expect(defaultProps.onPaletteNameBlur).toHaveBeenCalledTimes(1);
   });
 
+  it('calls onPaletteNameBlur when Enter is pressed in palette name input', () => {
+    render(<PaletteDisplay {...defaultProps} />);
+    const input = screen.getByLabelText(/name/i);
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(defaultProps.onPaletteNameBlur).toHaveBeenCalled();
+  });
+
   it('shows Generating placeholder when isGenerating', () => {
     render(<PaletteDisplay {...defaultProps} isGenerating={true} />);
     expect(screen.getByText(/generating palette/i)).toBeInTheDocument();
@@ -201,7 +208,7 @@ describe('PaletteDisplay', () => {
       />
     );
     expect(
-      screen.getByTitle(/double-click palette image to add #abc123/i)
+      screen.getByTitle(/click palette image to add #abc123/i)
     ).toBeInTheDocument();
   });
 

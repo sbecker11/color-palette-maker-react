@@ -137,6 +137,19 @@ describe('App', () => {
     );
   });
 
+  it('updates palette name on Enter key', async () => {
+    api.saveMetadata.mockResolvedValue({ success: true });
+    render(<App />);
+    await waitFor(() => expect(api.getImages).toHaveBeenCalled());
+    const input = screen.getByLabelText(/name/i);
+    fireEvent.change(input, { target: { value: 'New Name' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await waitFor(() => expect(api.saveMetadata).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.getByText(/palette name updated/i)).toBeInTheDocument()
+    );
+  });
+
   it('calls reorderImages when reorder triggered from ImageLibrary', async () => {
     api.getImages.mockResolvedValue({
       success: true,

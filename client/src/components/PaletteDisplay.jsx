@@ -51,6 +51,7 @@ function PaletteDisplay({
           value={paletteName}
           onChange={(e) => onPaletteNameChange?.(e.target.value)}
           onBlur={() => onPaletteNameBlur?.()}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onPaletteNameBlur?.(); } }}
           disabled={!selectedMeta}
         />
       </div>
@@ -106,9 +107,9 @@ function PaletteDisplay({
           className="palette-item empty-swatch-circle"
           title={
             isSamplingMode && currentSampledColor
-              ? `Double-click palette image to add ${currentSampledColor}. Turn off "Adding swatches (click)" to exit.`
+              ? `Click palette image to add ${currentSampledColor}. Turn off "Adding swatches (click)" to exit.`
               : isSamplingMode
-                ? 'Double-click palette image to add color. Turn off "Adding swatches (click)" to exit.'
+                ? 'Click palette image to add color. Turn off "Adding swatches (click)" to exit.'
                 : 'Click to enter add swatch mode (same as "Adding swatches (click)" toggle)'
           }
           onClick={onToggleSamplingMode}
@@ -181,7 +182,9 @@ function PaletteDisplay({
             if (v === 'rename') {
               paletteNameInputRef.current?.focus();
               paletteNameInputRef.current?.select();
-            } else if (v === 'delete') onDelete?.();
+            } else if (v === 'delete') {
+              setTimeout(() => onDelete?.(), 0);
+            }
             else if (v === 'duplicate') onDuplicate?.();
             else if (v === 'export') onExport?.();
             else if (v === 'kmeans5') onRegenerateWithK?.(5);

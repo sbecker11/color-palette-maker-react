@@ -38,7 +38,7 @@ SVG overlay with region boundaries, region circles, region hex values, and regio
 
 ### Palette Management
 
-- Rename palettes (edit and blur to save)
+- Rename palettes (edit and blur or press Enter to save)
 - Delete individual swatches
 - Duplicate palettes (auto-increment names)
 - Export as JSON
@@ -58,12 +58,12 @@ Browse, select, delete, reorder (move to top/bottom or step up/down), and duplic
 | Action | Description |
 |--------|-------------|
 | **Reorder (⏫ ⏬ ⬆️ ⬇️)** | Left column: ⏫ move to top, ⏬ move to bottom. Inner column: ⬆️ move up one, ⬇️ move down one. Order persisted to server. Note: New uploads always appear at the top regardless of manual reordering. |
-| **Palette Name** | Edit in the input and click away (blur) to save. Persisted automatically. |
+| **Palette Name** | Edit in the input and blur or press Enter to save. Persisted automatically. |
 | **Regenerate (K-means)** | Replace palette with freshly computed colors from the image. Choose K=5, 7, or 9. |
 | **Detect Regions** | Python/OpenCV subprocess detects large regions. Use K-means to extract colors only from masked regions. |
 | **Remove Region (click)** | Enter delete mode; click region boundaries to remove. Click outside to exit. |
 | **Clear all Regions** | Remove all detected regions at once. |
-| **Adding swatches** | Toggle to enter/exit manual swatch creation mode. Cursor shows +; double-click palette image to add color. |
+| **Adding swatches** | Toggle to enter/exit manual swatch creation mode. Cursor shows +; click palette image to add color. |
 | **Match palette swatches** | When regions exist, toggle to show/hide palette swatch circles on the image. Highlights sync between panel and overlays. |
 | **Export** | Download palette as `{ name, colors: [...] }`. Palette changes are saved to server automatically; Export creates downloadable files. |
 
@@ -74,7 +74,7 @@ Browse, select, delete, reorder (move to top/bottom or step up/down), and duplic
 1. Turn on **Adding swatches** or click the empty swatch circle
 2. Cursor changes to + (crosshair)
 3. Hover over the palette image to preview the color under the cursor
-4. Double-click to add that color to the palette
+4. Click to add that color to the palette
 5. Turn off **Adding swatches** or click the empty swatch to exit
 
 ### Dark Reader

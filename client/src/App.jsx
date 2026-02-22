@@ -178,6 +178,7 @@ function App() {
 
   const handleSelectImage = useCallback((meta, imageUrl, opts = {}) => {
     const { skipPaletteGeneration = false } = opts;
+    imageViewerRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
     setIsSamplingMode(false);
     setCurrentSampledColor(null);
     dispatchRegions({ type: 'SET_DELETE_MODE', payload: false });
@@ -408,7 +409,7 @@ function App() {
     return () => document.body.classList.remove('sampling-active');
   }, []);
 
-  const handleDoubleClickAddColor = useCallback((hexColor) => {
+  const handleAddColorClick = useCallback((hexColor) => {
     if (!isSamplingMode || !selectedMeta || !hexColor) return;
 
     const palette = selectedMeta.colorPalette || [];
@@ -663,6 +664,7 @@ function App() {
   }, [showMessage, isSamplingMode]);
 
   const palettePanelRef = useRef(null);
+  const imageViewerRef = useRef(null);
   const palette = selectedMeta?.colorPalette;
   const swatchLabels = selectedMeta?.swatchLabels &&
     Array.isArray(selectedMeta.swatchLabels) &&
@@ -730,12 +732,13 @@ function App() {
           onSwatchHover={setHoveredSwatchIndex}
         />
         <ImageViewer
+          ref={imageViewerRef}
           palettePanelRef={palettePanelRef}
           imageUrl={selectedImageUrl}
           imageAlt={paletteName || (selectedMeta ? getFilenameWithoutExt(getFilenameFromMeta(selectedMeta)) : null)}
           isSamplingMode={isSamplingMode}
           onSampledColorChange={setCurrentSampledColor}
-          onDoubleClickAddColor={handleDoubleClickAddColor}
+          onAddColorClick={handleAddColorClick}
           onExitAddingSwatchesMode={handleExitAddingSwatchesMode}
           regions={regions}
           paletteRegion={selectedMeta?.paletteRegion}

@@ -40,7 +40,7 @@ describe('ImageViewer', () => {
         imageUrl=""
         isSamplingMode={false}
         onSampledColorChange={vi.fn()}
-        onDoubleClickAddColor={vi.fn()}
+        onAddColorClick={vi.fn()}
       />
     );
     expect(screen.getByText(/select an image from the list/i)).toBeInTheDocument();
@@ -52,7 +52,7 @@ describe('ImageViewer', () => {
         imageUrl="/uploads/test.jpg"
         isSamplingMode={false}
         onSampledColorChange={vi.fn()}
-        onDoubleClickAddColor={vi.fn()}
+        onAddColorClick={vi.fn()}
       />
     );
     const img = document.querySelector('#displayedImage');
@@ -60,14 +60,14 @@ describe('ImageViewer', () => {
     expect(img).toHaveAttribute('src', '/uploads/test.jpg');
   });
 
-  it('calls onDoubleClickAddColor with sampled hex on double-click when in sampling mode', async () => {
-    const onDoubleClickAddColor = vi.fn();
+  it('calls onAddColorClick with sampled hex on click when in sampling mode', async () => {
+    const onAddColorClick = vi.fn();
     render(
       <ImageViewer
         imageUrl="/uploads/test.jpg"
         isSamplingMode={true}
         onSampledColorChange={vi.fn()}
-        onDoubleClickAddColor={onDoubleClickAddColor}
+        onAddColorClick={onAddColorClick}
       />
     );
     await waitFor(() => {
@@ -84,23 +84,23 @@ describe('ImageViewer', () => {
     img.getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 80 });
 
     const overlay = document.querySelector('.image-viewer-overlay');
-    fireEvent.doubleClick(overlay, { clientX: 50, clientY: 40 });
-    expect(onDoubleClickAddColor).toHaveBeenCalledWith('#ff0000');
+    fireEvent.click(overlay, { clientX: 50, clientY: 40 });
+    expect(onAddColorClick).toHaveBeenCalledWith('#ff0000');
   });
 
-  it('does not call onDoubleClickAddColor when not in sampling mode', () => {
-    const onDoubleClickAddColor = vi.fn();
+  it('does not call onAddColorClick on click when not in sampling mode', () => {
+    const onAddColorClick = vi.fn();
     render(
       <ImageViewer
         imageUrl="/uploads/test.jpg"
         isSamplingMode={false}
         onSampledColorChange={vi.fn()}
-        onDoubleClickAddColor={onDoubleClickAddColor}
+        onAddColorClick={onAddColorClick}
       />
     );
     const overlay = document.querySelector('.image-viewer-overlay');
-    if (overlay) fireEvent.doubleClick(overlay);
-    expect(onDoubleClickAddColor).not.toHaveBeenCalled();
+    if (overlay) fireEvent.click(overlay);
+    expect(onAddColorClick).not.toHaveBeenCalled();
   });
 
   it('calls onSampledColorChange with hex on mouse move when in sampling mode', async () => {
@@ -110,7 +110,7 @@ describe('ImageViewer', () => {
         imageUrl="/uploads/test.jpg"
         isSamplingMode={true}
         onSampledColorChange={onSampledColorChange}
-        onDoubleClickAddColor={vi.fn()}
+        onAddColorClick={vi.fn()}
       />
     );
     await waitFor(() => {
@@ -136,7 +136,7 @@ describe('ImageViewer', () => {
         imageUrl="/uploads/test.jpg"
         isSamplingMode={true}
         onSampledColorChange={onSampledColorChange}
-        onDoubleClickAddColor={vi.fn()}
+        onAddColorClick={vi.fn()}
       />
     );
     const overlay = document.querySelector('.image-viewer-overlay');
@@ -150,7 +150,7 @@ describe('ImageViewer', () => {
         imageUrl="/uploads/test.jpg"
         isSamplingMode={true}
         onSampledColorChange={vi.fn()}
-        onDoubleClickAddColor={vi.fn()}
+        onAddColorClick={vi.fn()}
       />
     );
     const overlay = document.querySelector('.image-viewer-overlay');
@@ -163,7 +163,7 @@ describe('ImageViewer', () => {
         imageUrl="/uploads/test.jpg"
         isSamplingMode={false}
         onSampledColorChange={vi.fn()}
-        onDoubleClickAddColor={vi.fn()}
+        onAddColorClick={vi.fn()}
       />
     );
     const img = document.querySelector('#displayedImage');
@@ -177,7 +177,7 @@ describe('ImageViewer', () => {
         imageUrl="/uploads/test.jpg"
         isSamplingMode={false}
         onSampledColorChange={vi.fn()}
-        onDoubleClickAddColor={vi.fn()}
+        onAddColorClick={vi.fn()}
         regions={regions}
       />
     );
@@ -198,7 +198,7 @@ describe('ImageViewer', () => {
         imageUrl="/uploads/test.jpg"
         isSamplingMode={false}
         onSampledColorChange={vi.fn()}
-        onDoubleClickAddColor={vi.fn()}
+        onAddColorClick={vi.fn()}
         regions={regions}
         isDeleteRegionMode={true}
         onRegionClick={onRegionClick}
@@ -221,7 +221,7 @@ describe('ImageViewer', () => {
         imageUrl="/uploads/test.jpg"
         isSamplingMode={false}
         onSampledColorChange={vi.fn()}
-        onDoubleClickAddColor={vi.fn()}
+        onAddColorClick={vi.fn()}
         isDeleteRegionMode={true}
         onExitDeleteRegionMode={onExitDeleteRegionMode}
       />
@@ -240,7 +240,7 @@ describe('ImageViewer', () => {
         imageUrl="/uploads/test.jpg"
         isSamplingMode={true}
         onSampledColorChange={vi.fn()}
-        onDoubleClickAddColor={vi.fn()}
+        onAddColorClick={vi.fn()}
         onExitAddingSwatchesMode={onExitAddingSwatchesMode}
       />
     );
@@ -259,7 +259,7 @@ describe('ImageViewer', () => {
         imageUrl="/uploads/test.jpg"
         isSamplingMode={false}
         onSampledColorChange={vi.fn()}
-        onDoubleClickAddColor={vi.fn()}
+        onAddColorClick={vi.fn()}
         regions={regions}
         isDeleteRegionMode={true}
         onExitDeleteRegionMode={onExitDeleteRegionMode}
@@ -281,7 +281,7 @@ describe('ImageViewer', () => {
         imageUrl="/uploads/test.jpg"
         isSamplingMode={false}
         onSampledColorChange={vi.fn()}
-        onDoubleClickAddColor={vi.fn()}
+        onAddColorClick={vi.fn()}
         paletteRegion={paletteRegion}
         palette={palette}
         regionLabels={['00']}
@@ -300,7 +300,7 @@ describe('ImageViewer', () => {
         imageUrl="/uploads/test.jpg"
         isSamplingMode={false}
         onSampledColorChange={vi.fn()}
-        onDoubleClickAddColor={vi.fn()}
+        onAddColorClick={vi.fn()}
         isDeleteRegionMode={true}
       />
     );
@@ -320,7 +320,7 @@ describe('ImageViewer', () => {
         imageUrl="/uploads/test.jpg"
         isSamplingMode={false}
         onSampledColorChange={vi.fn()}
-        onDoubleClickAddColor={vi.fn()}
+        onAddColorClick={vi.fn()}
         regions={regions}
         paletteRegion={paletteRegion}
         palette={palette}
@@ -354,7 +354,7 @@ describe('ImageViewer', () => {
         imageUrl="/uploads/bad.jpg"
         isSamplingMode={false}
         onSampledColorChange={vi.fn()}
-        onDoubleClickAddColor={vi.fn()}
+        onAddColorClick={vi.fn()}
       />
     );
     await waitFor(() => {
