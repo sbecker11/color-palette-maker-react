@@ -29,8 +29,8 @@
     "dev:server": "node scripts/run-with-venv.js nodemon server.js",
     "dev:server:title-card": "node scripts/run-with-venv.js nodemon server.js -- --title-card",
     "dev:client": "cd client && npm run dev",
-    "test": "cd client && npm run test",
-    "test:coverage": "cd client && npm run test:coverage",
+    "test": "cd client && npm run lint && npm run test",
+    "test:coverage": "cd client && npm run lint && npm run test:coverage",
     "build:with-coverage": "npm run build && npm run test:coverage"
   },
   "dependencies": {

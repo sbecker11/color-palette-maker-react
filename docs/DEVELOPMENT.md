@@ -141,8 +141,10 @@ Metadata is stored in `image_metadata.jsonl` inside the container; back it up or
 
 ## Testing
 
+`npm test` and `npm run test:coverage` run ESLint first; if lint fails, tests are not executed.
+
 ```bash
-# Run tests once
+# Run lint and tests once
 npm test
 
 # Run tests in watch mode (from client directory)
@@ -152,10 +154,10 @@ cd client && npm run test:watch
 **Coverage:**
 
 ```bash
-# Generate coverage report (saved to client directory)
+# Run lint, then generate coverage report (saved to client directory)
 npm run test:coverage
 
-# Build and generate coverage (no server start)
+# Build, then run lint and coverage (no server start)
 npm run build:with-coverage
 ```
 
