@@ -222,11 +222,22 @@ describe('PaletteDisplay', () => {
     expect(screen.getByRole('combobox', { name: 'Choose action' })).toBeDisabled();
   });
 
-  it('calls onDetectRegions when Detect all Regions is selected', () => {
+  it('shows Region Detection dropdown when Detect All Regions is selected', () => {
     render(<PaletteDisplay {...defaultProps} />);
-    const select = screen.getByRole('combobox', { name: 'Choose action' });
-    fireEvent.change(select, { target: { value: 'detectRegions' } });
+    expect(screen.queryByLabelText('Region detection approach')).not.toBeInTheDocument();
+    const actionSelect = screen.getByRole('combobox', { name: 'Choose action' });
+    fireEvent.change(actionSelect, { target: { value: 'detectRegions' } });
+    expect(screen.getByLabelText('Region detection approach')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Detect regions' })).toBeInTheDocument();
+  });
+
+  it('calls onDetectRegions with selected strategy when Detect button clicked', () => {
+    render(<PaletteDisplay {...defaultProps} />);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Choose action' }), { target: { value: 'detectRegions' } });
+    const detectBtn = screen.getByRole('button', { name: 'Detect regions' });
+    fireEvent.click(detectBtn);
     expect(defaultProps.onDetectRegions).toHaveBeenCalledTimes(1);
+    expect(defaultProps.onDetectRegions).toHaveBeenCalledWith('default', {});
   });
 
   it('calls onDeleteRegions when Clear all Regions is selected', () => {

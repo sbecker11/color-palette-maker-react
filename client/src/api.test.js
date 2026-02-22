@@ -265,13 +265,20 @@ describe('api', () => {
     expect(result).toEqual({ success: true, paletteRegion: [{ x: 5, y: 5, hex: '#ff0000' }] });
   });
 
-  it('detectRegions posts to /api/regions/:filename and returns result', async () => {
+  it('detectRegions posts to /api/regions/:filename with strategy and returns result', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ success: true, regions: [[[0, 0], [10, 0]]] }),
     });
-    const result = await api.detectRegions('img-123.jpeg');
-    expect(global.fetch).toHaveBeenCalledWith('/api/regions/img-123.jpeg', { method: 'POST' });
+    const result = await api.detectRegions('img-123.jpeg', { strategy: 'watershed' });
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/regions/img-123.jpeg',
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ strategy: 'watershed' }),
+      })
+    );
     expect(result).toEqual({ success: true, regions: [[[0, 0], [10, 0]]] });
   });
 

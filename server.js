@@ -193,7 +193,8 @@ app.post('/upload', upload.single('imageFile'), async (req, res) => {
 });
 
 // POST /api/regions/:filename - Detect regions using Python subprocess
-app.post('/api/regions/:filename', async (req, res) => {
+// Body: { strategy?, adaptiveBlockSize?, adaptiveC?, cannyLow?, cannyHigh?, colorClusters?, watershedDistRatio? }
+app.post('/api/regions/:filename', express.json(), async (req, res) => {
     const filename = req.params.filename;
     if (!validateFilename(filename)) {
         return res.status(400).json({ success: false, message: 'Invalid filename.' });
@@ -206,10 +207,21 @@ app.post('/api/regions/:filename', async (req, res) => {
     if (!fs.existsSync(scriptPath)) {
         return res.status(500).json({ success: false, message: 'Region detection script not found.' });
     }
+    const strategy = ['default', 'adaptive', 'otsu', 'canny', 'color', 'watershed'].includes(req.body?.strategy)
+        ? req.body.strategy
+        : 'default';
+    const procArgs = [scriptPath, imagePath, '--strategy', strategy];
+    const addArg = (name, val) => { if (val != null && val !== '') procArgs.push(name, String(val)); };
+    addArg('--adaptive-block-size', req.body?.adaptiveBlockSize);
+    addArg('--adaptive-c', req.body?.adaptiveC);
+    addArg('--canny-low', req.body?.cannyLow);
+    addArg('--canny-high', req.body?.cannyHigh);
+    addArg('--color-clusters', req.body?.colorClusters);
+    addArg('--watershed-dist-ratio', req.body?.watershedDistRatio);
     try {
         const pythonCmd = getRegionDetectionPython();
         const result = await new Promise((resolve, reject) => {
-            const proc = spawn(pythonCmd, [scriptPath, imagePath], {
+            const proc = spawn(pythonCmd, procArgs, {
                 cwd: __dirname,
                 stdio: ['ignore', 'pipe', 'pipe'],
             });

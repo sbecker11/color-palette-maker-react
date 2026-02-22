@@ -7,6 +7,10 @@ const CURSOR_DELETE_X = `url("data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path stroke="#000" stroke-width="2" d="M4 4l12 12M16 4L4 16" fill="none"/></svg>'
 )}") 10 10, auto`;
 
+// Target radius in screen pixels to match #palette-display swatch circles (16px)
+// Correction factor: observed 18px without it, so scale down by 16/18
+const SWATCH_RADIUS_PX = 16 * (16 / 18);
+
 const ImageViewer = forwardRef(function ImageViewer({
   imageUrl,
   imageAlt,
@@ -32,6 +36,10 @@ const ImageViewer = forwardRef(function ImageViewer({
   const canvasCtxRef = useRef(null);
   const viewerRef = useRef(null);
   const [imageSize, setImageSize] = useState({ w: 0, h: 0 });
+  const [overlayScale, setOverlayScale] = useState(0);
+  const [useFillMode, setUseFillMode] = useState(false);
+  const regionOverlayRef = useRef(null);
+  const contentRef = useRef(null);
   const [hoveredRegionIndex, setHoveredRegionIndex] = useState(null);
   const lastMouseEventRef = useRef(null);
   const onSampledColorChangeRef = useRef(onSampledColorChange);
@@ -203,6 +211,50 @@ const ImageViewer = forwardRef(function ImageViewer({
     img.src = imageUrl;
   }, [imageUrl]);
 
+  // Measure overlay SVG to compute scale (viewBox units per screen px) for circle sizing
+  const hasOverlay = (regions?.length > 0) || (paletteRegion?.length > 0);
+  useEffect(() => {
+    if (!hasOverlay || imageSize.w <= 0 || imageSize.h <= 0) {
+      queueMicrotask(() => setOverlayScale(0));
+      return;
+    }
+    const svg = regionOverlayRef.current;
+    if (!svg) return;
+    const updateScale = () => {
+      const rect = svg.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      const scale = Math.min(rect.width / imageSize.w, rect.height / imageSize.h);
+      setOverlayScale(scale);
+    };
+    updateScale();
+    const ro = new ResizeObserver(updateScale);
+    ro.observe(svg);
+    return () => {
+      ro.disconnect();
+      queueMicrotask(() => setOverlayScale(0));
+    };
+  }, [hasOverlay, imageSize.w, imageSize.h]);
+
+  // When container width > image width, use fill (cover) instead of contain
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el || imageSize.w <= 0) {
+      queueMicrotask(() => setUseFillMode(false));
+      return;
+    }
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      setUseFillMode(rect.width > imageSize.w);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      queueMicrotask(() => setUseFillMode(false));
+    };
+  }, [imageUrl, imageSize.w]);
+
   const handleMouseMove = (event) => {
     lastMouseEventRef.current = event;
     if (!isSamplingModeRef.current) return;
@@ -268,14 +320,20 @@ const ImageViewer = forwardRef(function ImageViewer({
           aria-hidden="true"
         />
         {hasImage && (
-          <div className="image-viewer-content">
-            <img
-              ref={imgRef}
-              id="displayedImage"
-              src={imageUrl}
-              alt={imageAlt || 'Palette image'}
-              title={imageAlt || 'Palette image'}
-            />
+          <div
+            ref={contentRef}
+            className={`image-viewer-content ${useFillMode ? 'image-viewer-content-fill' : ''}`}
+          >
+            {useFillMode ? (
+            <div className="image-viewer-inner">
+              <img
+                ref={imgRef}
+                id="displayedImage"
+                src={imageUrl}
+                alt={imageAlt || 'Palette image'}
+                title={imageAlt || 'Palette image'}
+                style={{ width: '100%', height: 'auto', display: 'block' }}
+              />
             <div
               className="image-viewer-overlay"
               style={{
@@ -288,6 +346,7 @@ const ImageViewer = forwardRef(function ImageViewer({
             />
             {((regions?.length > 0) || (paletteRegion?.length > 0)) && imageSize.w > 0 && (
               <svg
+                ref={regionOverlayRef}
                 className="region-overlay"
                 viewBox={`0 0 ${imageSize.w} ${imageSize.h}`}
                 preserveAspectRatio="xMidYMin meet"
@@ -345,8 +404,8 @@ const ImageViewer = forwardRef(function ImageViewer({
                   );
                 })}
                 {paletteRegion.map((regionData, i) => {
-                  const r = 15;
-                  const swatchOffset = 28;
+                  const r = overlayScale > 0 ? SWATCH_RADIUS_PX / overlayScale : SWATCH_RADIUS_PX;
+                  const swatchOffset = r * (28 / 15);
                   const swatchCx = regionData.x + swatchOffset;
                   const swatchCy = regionData.y - swatchOffset;
                   const labelOffset = r + 8;
@@ -463,6 +522,207 @@ const ImageViewer = forwardRef(function ImageViewer({
                   );
                 })}
               </svg>
+            )}
+            </div>
+            ) : (
+            <>
+              <img
+                ref={imgRef}
+                id="displayedImage"
+                src={imageUrl}
+                alt={imageAlt || 'Palette image'}
+                title={imageAlt || 'Palette image'}
+                style={{ objectFit: 'contain' }}
+              />
+            <div
+              className="image-viewer-overlay"
+              style={{
+                cursor: isSamplingMode ? 'crosshair' : isDeleteRegionMode ? 'crosshair' : 'default',
+                pointerEvents: isSamplingMode || isDeleteRegionMode || (regions?.length > 0) ? 'auto' : 'none',
+              }}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+              onClick={handleAddColorClick}
+            />
+            {((regions?.length > 0) || (paletteRegion?.length > 0)) && imageSize.w > 0 && (
+              <svg
+                ref={regionOverlayRef}
+                className="region-overlay"
+                viewBox={`0 0 ${imageSize.w} ${imageSize.h}`}
+                preserveAspectRatio="xMidYMin meet"
+                style={{
+                  pointerEvents: isSamplingMode
+                    ? 'none'
+                    : regions?.length > 0 || paletteRegion?.length > 0
+                      ? 'auto'
+                      : 'none',
+                  cursor: isDeleteRegionMode ? 'crosshair' : 'default',
+                }}
+                onClick={(e) => {
+                  if (!isDeleteRegionMode) return;
+                  const target = e.target;
+                  if (target.dataset.regionIndex != null) {
+                    e.stopPropagation();
+                    onRegionClick?.(parseInt(target.dataset.regionIndex, 10));
+                  }
+                }}
+                onMouseLeave={() => {
+                  setHoveredRegionIndex(null);
+                  if (showMatchPaletteSwatches) onSwatchHover?.(null);
+                }}
+              >
+                {regions.map((poly, i) => {
+                  const shrunk = shrinkPolygon(poly, 3);
+                  const d = polygonToPath(shrunk);
+                  const regionData = paletteRegion?.[i];
+                  const paletteColorForRegion = regionData?.hex;
+                  const paletteIdxForRegion = paletteColorForRegion != null
+                    ? palette.findIndex((c) => String(c).toLowerCase() === String(paletteColorForRegion).toLowerCase())
+                    : -1;
+                  const isRegionHovered = hoveredRegionIndex === i;
+                  const isSwatchMatchHighlighted = showMatchPaletteSwatches && hoveredSwatchIndex === paletteIdxForRegion;
+                  const isBoundaryHighlighted = isRegionHovered || isSwatchMatchHighlighted;
+                  return (
+                    <path
+                      key={`region-${i}`}
+                      className="region-boundary"
+                      data-region-index={i}
+                      d={d}
+                      fill={isBoundaryHighlighted ? 'rgba(150, 220, 255, 0.45)' : 'rgba(100, 180, 255, 0.2)'}
+                      stroke={isBoundaryHighlighted ? 'rgba(80, 160, 255, 1)' : 'rgba(50, 120, 200, 0.9)'}
+                      strokeWidth={isBoundaryHighlighted ? 4 : 3}
+                      style={{ cursor: isDeleteRegionMode ? CURSOR_DELETE_X : 'default' }}
+                      onMouseEnter={() => {
+                        setHoveredRegionIndex(i);
+                        if (showMatchPaletteSwatches && paletteIdxForRegion >= 0) onSwatchHover?.(paletteIdxForRegion);
+                      }}
+                      onMouseLeave={() => {
+                        setHoveredRegionIndex(null);
+                        if (showMatchPaletteSwatches) onSwatchHover?.(null);
+                      }}
+                    />
+                  );
+                })}
+                {paletteRegion.map((regionData, i) => {
+                  const r = overlayScale > 0 ? SWATCH_RADIUS_PX / overlayScale : SWATCH_RADIUS_PX;
+                  const swatchOffset = r * (28 / 15);
+                  const swatchCx = regionData.x + swatchOffset;
+                  const swatchCy = regionData.y - swatchOffset;
+                  const labelOffset = r + 8;
+                  const regionColor = regionData.regionColor ?? regionData.hex;
+                  const paletteColor = regionData.hex;
+                  const paletteIdx = palette.findIndex(
+                    (c) => String(c).toLowerCase() === String(paletteColor).toLowerCase()
+                  );
+                  const regionLabel = regionLabels[i] ?? String(i).padStart(2, '0');
+                  const isRegionHovered = hoveredRegionIndex === i;
+                  const isSwatchMatchHighlighted = showMatchPaletteSwatches && hoveredSwatchIndex === paletteIdx;
+                  const isRegionHighlighted = isRegionHovered || isSwatchMatchHighlighted;
+                  const isOverlayHighlighted = (hoveredSwatchIndex === paletteIdx) || (showMatchPaletteSwatches && isRegionHovered);
+                  const regionHexFontSize = isRegionHighlighted ? 16 : 13;
+                  const swatchHexFontSize = (isRegionHighlighted || isOverlayHighlighted) ? 17 : 14;
+                  const baseStyle = (fontSize) => ({ textAnchor: 'middle', dominantBaseline: 'central', fontSize, fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Monaco, "Courier New", monospace' });
+                  const dualText = (h, v, t, hovered, fontSize) => (
+                    <>
+                      <text x={h} y={v} {...baseStyle(fontSize)} fill="black">{t}</text>
+                      <text x={h - 1} y={v - 1} {...baseStyle(fontSize)} fill={hovered ? 'rgba(255, 255, 200, 1)' : 'white'}>{t}</text>
+                    </>
+                  );
+                  const regionLabelFontSize = isRegionHighlighted ? 15 : 12;
+                  const swatchLabelFontSize = (isRegionHighlighted || isOverlayHighlighted) ? 16 : 13;
+                  const regionLabelStyle = { textAnchor: 'middle', dominantBaseline: 'central', fontSize: regionLabelFontSize, fontWeight: 600 };
+                  return (
+                    <g
+                      key={`region-display-${i}`}
+                      className="region-display"
+                      aria-label={`Region ${regionLabel}`}
+                      onMouseEnter={() => {
+                        setHoveredRegionIndex(i);
+                        if (showMatchPaletteSwatches) onSwatchHover?.(paletteIdx >= 0 ? paletteIdx : null);
+                      }}
+                      onMouseLeave={() => {
+                        setHoveredRegionIndex(null);
+                        if (showMatchPaletteSwatches) onSwatchHover?.(null);
+                      }}
+                      style={{ cursor: isDeleteRegionMode ? CURSOR_DELETE_X : 'default' }}
+                    >
+                      <circle
+                        cx={regionData.x}
+                        cy={regionData.y}
+                        r={r}
+                        fill="none"
+                        stroke={isRegionHighlighted ? 'rgba(255, 220, 100, 1)' : 'white'}
+                        strokeWidth={isRegionHighlighted ? 3 : 1}
+                        className="region-circle"
+                        aria-hidden="true"
+                      />
+                      {showMatchPaletteSwatches && (
+                        <>
+                          <circle
+                            cx={swatchCx}
+                            cy={swatchCy}
+                            r={r}
+                            fill={paletteColor}
+                            className={`palette-swatch-overlay ${isOverlayHighlighted ? 'highlighted' : ''}`}
+                            stroke={isOverlayHighlighted ? 'rgba(255, 255, 100, 1)' : 'var(--border-color)'}
+                            strokeWidth={1}
+                          />
+                          {(() => {
+                            const swatchLabel =
+                              paletteIdx >= 0 && swatchLabels[paletteIdx]
+                                ? swatchLabels[paletteIdx]
+                                : String.fromCharCode(65 + (paletteIdx >= 0 ? paletteIdx : i) % 26);
+                            const swatchLabelStyle = {
+                              textAnchor: 'middle',
+                              dominantBaseline: 'central',
+                              fontSize: swatchLabelFontSize,
+                              fontWeight: 600,
+                            };
+                            return (
+                              <>
+                                <text
+                                  x={swatchCx + 1}
+                                  y={swatchCy + 1}
+                                  {...swatchLabelStyle}
+                                  fill="black"
+                                  className="swatch-label-shadow"
+                                >
+                                  {swatchLabel}
+                                </text>
+                                <text
+                                  x={swatchCx}
+                                  y={swatchCy}
+                                  {...swatchLabelStyle}
+                                  fill={(isRegionHighlighted || isOverlayHighlighted) ? 'rgba(255, 255, 200, 1)' : 'white'}
+                                  className="swatch-label-overlay"
+                                >
+                                  {swatchLabel}
+                                </text>
+                              </>
+                            );
+                          })()}
+                          {dualText(swatchCx, swatchCy + labelOffset, formatHexDisplay(paletteColor), isRegionHighlighted || isOverlayHighlighted, swatchHexFontSize)}
+                        </>
+                      )}
+                      <text x={regionData.x + 1} y={regionData.y + 1} {...regionLabelStyle} fill="black" className="region-label-shadow">
+                        {regionLabel}
+                      </text>
+                      <text
+                        x={regionData.x}
+                        y={regionData.y}
+                        {...regionLabelStyle}
+                        fill={isRegionHighlighted ? 'rgba(255, 255, 200, 1)' : 'white'}
+                        className="region-label"
+                      >
+                        {regionLabel}
+                      </text>
+                      {dualText(regionData.x, regionData.y + labelOffset, formatHexDisplay(regionColor), isRegionHighlighted, regionHexFontSize)}
+                    </g>
+                  );
+                })}
+              </svg>
+            )}
+            </>
             )}
           </div>
         )}

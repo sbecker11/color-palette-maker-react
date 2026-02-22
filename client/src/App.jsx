@@ -553,7 +553,7 @@ function App() {
       .finally(() => setPaletteGenerating(false));
   }, [selectedMeta, regions, showMessage, showMatchPaletteSwatches]);
 
-  const handleDetectRegions = useCallback(async () => {
+  const handleDetectRegions = useCallback(async (strategy = 'default', params = {}) => {
     if (!selectedMeta) {
       showMessage('Please select an image first.', true);
       return;
@@ -561,8 +561,14 @@ function App() {
     const filename = getFilenameFromMeta(selectedMeta);
     if (!filename) return;
     dispatchRegions({ type: 'SET_DETECTING', payload: true });
+    // Clear regions before applying new detection
+    dispatchRegions({ type: 'SET_REGIONS', payload: [] });
+    setSelectedMeta((prev) => (prev ? { ...applyRegionsToMeta(prev, []), paletteRegion: [] } : prev));
+    setImages((prev) =>
+      prev.map((m) => (getFilenameFromMeta(m) === filename ? { ...m, ...applyRegionsToMeta(m, []), paletteRegion: [] } : m))
+    );
     try {
-      const result = await api.detectRegions(filename);
+      const result = await api.detectRegions(filename, { strategy, ...params });
       if (result.success && result.regions) {
         const newRegions = result.regions;
         const newPaletteRegions = Array.isArray(result.paletteRegion) ? result.paletteRegion : [];

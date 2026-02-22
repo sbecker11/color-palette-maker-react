@@ -281,18 +281,19 @@ describe('App', () => {
     expect(createObjectURL).toHaveBeenCalled();
   });
 
-  it('calls detectRegions and updates state when Detect Regions succeeds', async () => {
+  it('calls detectRegions when Detect All Regions selected then Detect button clicked', async () => {
     api.detectRegions.mockResolvedValue({
       success: true,
       regions: [[[0, 0], [10, 0], [10, 10]]],
       paletteRegion: [{ x: 5, y: 5, hex: '#ff0000', regionColor: '#ff0000' }],
     });
-    api.saveMetadata.mockResolvedValue({ success: true });
     render(<App />);
     await waitFor(() => expect(api.getImages).toHaveBeenCalled());
-    const select = screen.getByRole('combobox', { name: 'Choose action' });
-    fireEvent.change(select, { target: { value: 'detectRegions' } });
-    await waitFor(() => expect(api.detectRegions).toHaveBeenCalledWith('img-1.jpeg'));
+    const actionSelect = screen.getByRole('combobox', { name: 'Choose action' });
+    fireEvent.change(actionSelect, { target: { value: 'detectRegions' } });
+    const detectBtn = await screen.findByRole('button', { name: 'Detect regions' });
+    fireEvent.click(detectBtn);
+    await waitFor(() => expect(api.detectRegions).toHaveBeenCalledWith('img-1.jpeg', { strategy: 'default' }));
     await waitFor(() =>
       expect(screen.getByText(/detected \d+ region/i)).toBeInTheDocument()
     );

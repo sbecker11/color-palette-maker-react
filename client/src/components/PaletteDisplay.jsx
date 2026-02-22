@@ -34,8 +34,42 @@ function PaletteDisplay({
   palettePanelRef,
 }) {
   const [actionSelect, setActionSelect] = useState('');
+  const [showRegionDetection, setShowRegionDetection] = useState(false);
+  const [regionStrategy, setRegionStrategy] = useState('default');
+  const [regionParams, setRegionParams] = useState({
+    adaptiveBlockSize: 11,
+    adaptiveC: 2,
+    cannyLow: 50,
+    cannyHigh: 150,
+    colorClusters: 12,
+    watershedDistRatio: 0.5,
+  });
   const paletteNameInputRef = useRef(null);
   const hasPalette = palette && Array.isArray(palette) && palette.length > 0;
+  const regionStrategies = [
+    { value: 'default', label: 'Default (cascade)' },
+    { value: 'adaptive', label: 'Adaptive' },
+    { value: 'otsu', label: 'Otsu' },
+    { value: 'canny', label: 'Canny' },
+    { value: 'color', label: 'Color K-means' },
+    { value: 'watershed', label: 'Watershed' },
+  ];
+  const hasStrategyParams = ['adaptive', 'canny', 'color', 'watershed'].includes(regionStrategy);
+  const buildDetectParams = () => {
+    const opts = {};
+    if (regionStrategy === 'adaptive') {
+      opts.adaptiveBlockSize = regionParams.adaptiveBlockSize;
+      opts.adaptiveC = regionParams.adaptiveC;
+    } else if (regionStrategy === 'canny') {
+      opts.cannyLow = regionParams.cannyLow;
+      opts.cannyHigh = regionParams.cannyHigh;
+    } else if (regionStrategy === 'color') {
+      opts.colorClusters = regionParams.colorClusters;
+    } else if (regionStrategy === 'watershed') {
+      opts.watershedDistRatio = regionParams.watershedDistRatio;
+    }
+    return opts;
+  };
   const showPlaceholder = !isGenerating && !hasPalette;
 
   return (
@@ -171,6 +205,116 @@ function PaletteDisplay({
           Deleting regions (click)
         </label>
       </div>
+      {showRegionDetection && (
+      <div id="regionDetectionSection">
+        <div id="regionDetectionRow">
+          <label htmlFor="regionStrategySelect">Region detection:</label>
+          <select
+            id="regionStrategySelect"
+            aria-label="Region detection approach"
+            value={regionStrategy}
+            onChange={(e) => setRegionStrategy(e.target.value)}
+            disabled={!selectedMeta || regionsDetecting}
+          >
+            {regionStrategies.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => onDetectRegions?.(regionStrategy, buildDetectParams())}
+            disabled={!selectedMeta || regionsDetecting}
+            aria-label="Detect regions"
+          >
+            {regionsDetecting ? 'Detecting…' : 'Detect'}
+          </button>
+        </div>
+        {hasStrategyParams && (
+        <div id="regionParamsRow">
+          {regionStrategy === 'adaptive' && (
+            <>
+              <label htmlFor="regionParamBlockSize">Block size:</label>
+              <input
+                id="regionParamBlockSize"
+                type="number"
+                min={3}
+                max={31}
+                step={2}
+                value={regionParams.adaptiveBlockSize}
+                onChange={(e) => setRegionParams((p) => ({ ...p, adaptiveBlockSize: parseInt(e.target.value, 10) || 11 }))}
+                disabled={regionsDetecting}
+              />
+              <label htmlFor="regionParamC">C:</label>
+              <input
+                id="regionParamC"
+                type="number"
+                min={0}
+                max={20}
+                value={regionParams.adaptiveC}
+                onChange={(e) => setRegionParams((p) => ({ ...p, adaptiveC: parseInt(e.target.value, 10) || 2 }))}
+                disabled={regionsDetecting}
+              />
+            </>
+          )}
+          {regionStrategy === 'canny' && (
+            <>
+              <label htmlFor="regionParamCannyLow">Low:</label>
+              <input
+                id="regionParamCannyLow"
+                type="number"
+                min={1}
+                max={255}
+                value={regionParams.cannyLow}
+                onChange={(e) => setRegionParams((p) => ({ ...p, cannyLow: parseInt(e.target.value, 10) || 50 }))}
+                disabled={regionsDetecting}
+              />
+              <label htmlFor="regionParamCannyHigh">High:</label>
+              <input
+                id="regionParamCannyHigh"
+                type="number"
+                min={1}
+                max={255}
+                value={regionParams.cannyHigh}
+                onChange={(e) => setRegionParams((p) => ({ ...p, cannyHigh: parseInt(e.target.value, 10) || 150 }))}
+                disabled={regionsDetecting}
+              />
+            </>
+          )}
+          {regionStrategy === 'color' && (
+            <>
+              <label htmlFor="regionParamClusters">Clusters:</label>
+              <input
+                id="regionParamClusters"
+                type="number"
+                min={2}
+                max={20}
+                value={regionParams.colorClusters}
+                onChange={(e) => setRegionParams((p) => ({ ...p, colorClusters: parseInt(e.target.value, 10) || 12 }))}
+                disabled={regionsDetecting}
+              />
+            </>
+          )}
+          {regionStrategy === 'watershed' && (
+            <>
+              <label htmlFor="regionParamDistRatio">Dist ratio:</label>
+              <input
+                id="regionParamDistRatio"
+                type="number"
+                min={0.1}
+                max={0.9}
+                step={0.1}
+                value={regionParams.watershedDistRatio}
+                onChange={(e) => setRegionParams((p) => ({ ...p, watershedDistRatio: parseFloat(e.target.value) || 0.5 }))}
+                disabled={regionsDetecting}
+              />
+            </>
+          )}
+        </div>
+        )}
+      </div>
+      )}
       <div id="paletteActionsRow">
         <select
           id="paletteActionsSelect"
@@ -192,7 +336,7 @@ function PaletteDisplay({
             else if (v === 'kmeans9') onRegenerateWithK?.(9);
             else if (v === 'enterAddingSwatches') onToggleSamplingMode?.();
             else if (v === 'clearSwatches') onClearAllSwatches?.();
-            else if (v === 'detectRegions') onDetectRegions?.();
+            else if (v === 'detectRegions') setShowRegionDetection(true);
             else if (v === 'enterDeleteRegionMode') onEnterDeleteRegionMode?.();
             else if (v === 'deleteRegions') onDeleteRegions?.();
           }}
@@ -210,7 +354,7 @@ function PaletteDisplay({
           <option value="enterAddingSwatches">Adding Swatches (click)</option>
           <option value="clearSwatches" disabled={!hasPalette}>Clear all Swatches</option>
           <option value="" disabled>--------</option>
-          <option value="detectRegions">{regionsDetecting ? 'Detecting…' : 'Detect all Regions'}</option>
+          <option value="detectRegions">Detect All Regions</option>
           <option value="enterDeleteRegionMode" disabled={!hasRegions}>Deleting Regions (click)</option>
           <option value="deleteRegions" disabled={!hasRegions}>Clear all Regions</option>
         </select>

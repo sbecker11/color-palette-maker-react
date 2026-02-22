@@ -45,9 +45,27 @@ const api = {
     return handleResponse(response);
   },
 
-  async detectRegions(filename) {
+  async detectRegions(filename, opts = {}) {
+    const {
+      strategy = 'default',
+      adaptiveBlockSize,
+      adaptiveC,
+      cannyLow,
+      cannyHigh,
+      colorClusters,
+      watershedDistRatio,
+    } = opts;
+    const body = { strategy };
+    if (adaptiveBlockSize != null) body.adaptiveBlockSize = adaptiveBlockSize;
+    if (adaptiveC != null) body.adaptiveC = adaptiveC;
+    if (cannyLow != null) body.cannyLow = cannyLow;
+    if (cannyHigh != null) body.cannyHigh = cannyHigh;
+    if (colorClusters != null) body.colorClusters = colorClusters;
+    if (watershedDistRatio != null) body.watershedDistRatio = watershedDistRatio;
     const response = await fetch(`/api/regions/${encodeURIComponent(filename)}`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     });
     return handleResponse(response);
   },
