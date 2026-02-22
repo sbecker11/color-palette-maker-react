@@ -61,7 +61,16 @@ Run `npm run ready` to lint, test, and then run the check (useful before commit 
 
 ## Development Mode
 
-Run both the backend server and React dev server:
+### One-command dev (recommended)
+
+```bash
+npm run x
+# or: npm run dev:x
+```
+
+Runs `npm install` if `package.json` or `client/package.json` changed, then starts both servers. No need to think about Vite vs full rebuild—Vite HMR and nodemon handle live updates automatically.
+
+### Standard dev
 
 ```bash
 npm run dev
