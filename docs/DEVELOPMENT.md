@@ -68,7 +68,7 @@ npm run x
 # or: npm run dev:x
 ```
 
-Runs `npm install` if `package.json` or `client/package.json` changed, then starts both servers. No need to think about Vite vs full rebuild—Vite HMR and nodemon handle live updates automatically.
+Runs `npm install` if `package.json` or `client/package.json` changed, then starts both servers. Opens the browser at http://localhost:5173 once Vite is ready. No need to think about Vite vs full rebuild—Vite HMR and nodemon handle live updates automatically.
 
 ### Standard dev
 

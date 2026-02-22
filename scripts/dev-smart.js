@@ -40,4 +40,14 @@ if (needsInstall()) {
 }
 
 const proc = spawn('npm', ['run', 'dev'], { cwd: rootDir, stdio: 'inherit', shell: true });
+
+// Wait for both Vite and the API to be ready, then open browser
+const openProc = spawn('npx wait-on -t 60000 http://localhost:5173 http://localhost:3000/api/config && open http://localhost:5173', {
+  cwd: rootDir,
+  shell: true,
+  stdio: 'ignore',
+  detached: true,
+});
+openProc.unref();
+
 proc.on('exit', (code) => process.exit(code ?? 0));
