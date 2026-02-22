@@ -433,11 +433,13 @@ const ImageViewer = forwardRef(function ImageViewer({
                   const isOverlayHighlighted = (hoveredSwatchIndex === paletteIdx) || (showMatchPaletteSwatches && isRegionHovered);
                   const regionHexFontSize = scaledFont(isRegionHighlighted ? REGION_HEX_FONT_HOVER_PX : REGION_HEX_FONT_PX);
                   const swatchHexFontSize = scaledFont((isRegionHighlighted || isOverlayHighlighted) ? SWATCH_HEX_FONT_HOVER_PX : SWATCH_HEX_FONT_PX);
+                  const shadowOffset = overlayScale > 0 ? 1 / overlayScale : 1;
+                  const regionCircleStrokeWidth = overlayScale > 0 ? 1 / overlayScale : 1;
                   const baseStyle = (fontSize) => ({ textAnchor: 'middle', dominantBaseline: 'central', fontSize, fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Monaco, "Courier New", monospace' });
                   const dualText = (h, v, t, hovered, fontSize) => (
                     <>
-                      <text x={h} y={v} {...baseStyle(fontSize)} fill="black">{t}</text>
-                      <text x={h - 1} y={v - 1} {...baseStyle(fontSize)} fill={hovered ? 'rgba(255, 255, 200, 1)' : 'white'}>{t}</text>
+                      <text x={h + shadowOffset} y={v + shadowOffset} {...baseStyle(fontSize)} fill="black">{t}</text>
+                      <text x={h} y={v} {...baseStyle(fontSize)} fill={hovered ? 'rgba(255, 255, 200, 1)' : 'white'}>{t}</text>
                     </>
                   );
                   const regionLabelFontSize = scaledFont(isRegionHighlighted ? REGION_LABEL_FONT_HOVER_PX : REGION_LABEL_FONT_PX);
@@ -459,17 +461,35 @@ const ImageViewer = forwardRef(function ImageViewer({
                       style={{ cursor: isDeleteRegionMode ? CURSOR_DELETE_X : 'default' }}
                     >
                       <circle
+                        cx={regionData.x + shadowOffset}
+                        cy={regionData.y + shadowOffset}
+                        r={r}
+                        fill="none"
+                        stroke="black"
+                        strokeWidth={regionCircleStrokeWidth}
+                        className="region-circle-shadow"
+                        aria-hidden="true"
+                      />
+                      <circle
                         cx={regionData.x}
                         cy={regionData.y}
                         r={r}
                         fill="none"
                         stroke={isRegionHighlighted ? 'rgba(255, 220, 100, 1)' : 'white'}
-                        strokeWidth={isRegionHighlighted ? 3 : 1}
+                        strokeWidth={regionCircleStrokeWidth}
                         className="region-circle"
                         aria-hidden="true"
                       />
                       {showMatchPaletteSwatches && regionData.hex != null && (
                         <>
+                          <circle
+                            cx={swatchCx + shadowOffset}
+                            cy={swatchCy + shadowOffset}
+                            r={r}
+                            fill="black"
+                            className="palette-swatch-overlay-shadow"
+                            aria-hidden="true"
+                          />
                           <circle
                             cx={swatchCx}
                             cy={swatchCy}
@@ -493,8 +513,8 @@ const ImageViewer = forwardRef(function ImageViewer({
                             return (
                               <>
                                 <text
-                                  x={swatchCx + 1}
-                                  y={swatchCy + 1}
+                                  x={swatchCx + shadowOffset}
+                                  y={swatchCy + shadowOffset}
                                   {...swatchLabelStyle}
                                   fill="black"
                                   className="swatch-label-shadow"
@@ -516,7 +536,7 @@ const ImageViewer = forwardRef(function ImageViewer({
                           {dualText(swatchCx, swatchCy + labelOffset, formatHexDisplay(paletteColor), isRegionHighlighted || isOverlayHighlighted, swatchHexFontSize)}
                         </>
                       )}
-                      <text x={regionData.x + 1} y={regionData.y + 1} {...regionLabelStyle} fill="black" className="region-label-shadow">
+                      <text x={regionData.x + shadowOffset} y={regionData.y + shadowOffset} {...regionLabelStyle} fill="black" className="region-label-shadow">
                         {regionLabel}
                       </text>
                       <text
@@ -633,11 +653,13 @@ const ImageViewer = forwardRef(function ImageViewer({
                   const isOverlayHighlighted = (hoveredSwatchIndex === paletteIdx) || (showMatchPaletteSwatches && isRegionHovered);
                   const regionHexFontSize = scaledFont(isRegionHighlighted ? REGION_HEX_FONT_HOVER_PX : REGION_HEX_FONT_PX);
                   const swatchHexFontSize = scaledFont((isRegionHighlighted || isOverlayHighlighted) ? SWATCH_HEX_FONT_HOVER_PX : SWATCH_HEX_FONT_PX);
+                  const shadowOffset = overlayScale > 0 ? 1 / overlayScale : 1;
+                  const regionCircleStrokeWidth = overlayScale > 0 ? 1 / overlayScale : 1;
                   const baseStyle = (fontSize) => ({ textAnchor: 'middle', dominantBaseline: 'central', fontSize, fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Monaco, "Courier New", monospace' });
                   const dualText = (h, v, t, hovered, fontSize) => (
                     <>
-                      <text x={h} y={v} {...baseStyle(fontSize)} fill="black">{t}</text>
-                      <text x={h - 1} y={v - 1} {...baseStyle(fontSize)} fill={hovered ? 'rgba(255, 255, 200, 1)' : 'white'}>{t}</text>
+                      <text x={h + shadowOffset} y={v + shadowOffset} {...baseStyle(fontSize)} fill="black">{t}</text>
+                      <text x={h} y={v} {...baseStyle(fontSize)} fill={hovered ? 'rgba(255, 255, 200, 1)' : 'white'}>{t}</text>
                     </>
                   );
                   const regionLabelFontSize = scaledFont(isRegionHighlighted ? REGION_LABEL_FONT_HOVER_PX : REGION_LABEL_FONT_PX);
@@ -659,17 +681,35 @@ const ImageViewer = forwardRef(function ImageViewer({
                       style={{ cursor: isDeleteRegionMode ? CURSOR_DELETE_X : 'default' }}
                     >
                       <circle
+                        cx={regionData.x + shadowOffset}
+                        cy={regionData.y + shadowOffset}
+                        r={r}
+                        fill="none"
+                        stroke="black"
+                        strokeWidth={regionCircleStrokeWidth}
+                        className="region-circle-shadow"
+                        aria-hidden="true"
+                      />
+                      <circle
                         cx={regionData.x}
                         cy={regionData.y}
                         r={r}
                         fill="none"
                         stroke={isRegionHighlighted ? 'rgba(255, 220, 100, 1)' : 'white'}
-                        strokeWidth={isRegionHighlighted ? 3 : 1}
+                        strokeWidth={regionCircleStrokeWidth}
                         className="region-circle"
                         aria-hidden="true"
                       />
                       {showMatchPaletteSwatches && regionData.hex != null && (
                         <>
+                          <circle
+                            cx={swatchCx + shadowOffset}
+                            cy={swatchCy + shadowOffset}
+                            r={r}
+                            fill="black"
+                            className="palette-swatch-overlay-shadow"
+                            aria-hidden="true"
+                          />
                           <circle
                             cx={swatchCx}
                             cy={swatchCy}
@@ -693,8 +733,8 @@ const ImageViewer = forwardRef(function ImageViewer({
                             return (
                               <>
                                 <text
-                                  x={swatchCx + 1}
-                                  y={swatchCy + 1}
+                                  x={swatchCx + shadowOffset}
+                                  y={swatchCy + shadowOffset}
                                   {...swatchLabelStyle}
                                   fill="black"
                                   className="swatch-label-shadow"
@@ -716,7 +756,7 @@ const ImageViewer = forwardRef(function ImageViewer({
                           {dualText(swatchCx, swatchCy + labelOffset, formatHexDisplay(paletteColor), isRegionHighlighted || isOverlayHighlighted, swatchHexFontSize)}
                         </>
                       )}
-                      <text x={regionData.x + 1} y={regionData.y + 1} {...regionLabelStyle} fill="black" className="region-label-shadow">
+                      <text x={regionData.x + shadowOffset} y={regionData.y + shadowOffset} {...regionLabelStyle} fill="black" className="region-label-shadow">
                         {regionLabel}
                       </text>
                       <text

@@ -57,6 +57,15 @@
   .swatch:nth-child(4) { background: #15aec2; animation-delay: 0.4s; }
   .swatch:nth-child(5) { background: #8eaccd; animation-delay: 0.5s; }
 
+  /* Hero row: title + Open app button */
+  .hero-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 20px;
+  }
+
   /* App name */
   .app-name {
     font-family: sans-serif;
@@ -65,7 +74,7 @@
     color: #F5F0E8;
     line-height: 1.1;
     letter-spacing: -0.01em;
-    margin-bottom: 20px;
+    margin-bottom: 0;
     opacity: 0;
     transform: translateY(12px);
     animation: rise 0.7s 0.3s forwards;
@@ -187,8 +196,10 @@
   /* Open app button */
   .open-app-btn {
     display: inline-block;
-    margin-top: 40px;
-    padding: 12px 28px;
+    flex-shrink: 0;
+    margin-top: 0;
+    padding: 10px 16px;
+    white-space: nowrap;
     border: 1px solid #333;
     background: transparent;
     color: #888;
@@ -228,10 +239,13 @@
     <div class="swatch"></div>
   </div>
 
-  <!-- App name — click to close overlay -->
-  <h1 class="app-name" onclick="window.parent.postMessage({type:'about-close'}, '*')">
-    Color <em>Palette</em> Maker
-  </h1>
+  <!-- Hero: title + Open app button -->
+  <div class="hero-row">
+    <h1 class="app-name" onclick="window.parent.postMessage({type:'about-close'}, '*')">
+      Color <em>Palette</em> Maker
+    </h1>
+    <a href="#" class="open-app-btn" onclick="window.parent.postMessage({type:'about-close'}, '*'); return false;">Open app</a>
+  </div>
 
   <!-- Purpose -->
   <p class="purpose">
@@ -265,9 +279,6 @@
       <span class="credit-value"><a href="https://linkedin.com/in/shawnbecker">linkedin.com/in/shawnbecker</a></span>
     </div>
   </div>
-
-  <!-- Open app button -->
-  <a href="#" class="open-app-btn" onclick="window.parent.postMessage({type:'about-close'}, '*'); return false;">Open app</a>
 
   <!-- Tech stack -->
   <div class="stack">
