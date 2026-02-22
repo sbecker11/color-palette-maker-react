@@ -10,7 +10,7 @@ describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    api.getConfig = vi.fn().mockResolvedValue({ titleCard: false });
+    api.getConfig = vi.fn().mockResolvedValue({ about: false });
     api.getImages.mockResolvedValue({
       success: true,
       images: [

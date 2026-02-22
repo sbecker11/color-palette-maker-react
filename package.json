@@ -21,16 +21,16 @@
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
-    "start": "node scripts/run-with-venv.js node server.js",
-    "start:title-card": "node scripts/run-with-venv.js node server.js --title-card",
+    "start": "npx kill-port 3000 && node scripts/run-with-venv.js node server.js",
     "build": "cd client && npm run build",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "dev:title-card": "concurrently \"npm run dev:server:title-card\" \"npm run dev:client\"",
-    "dev:server": "node scripts/run-with-venv.js nodemon server.js",
-    "dev:server:title-card": "node scripts/run-with-venv.js nodemon server.js -- --title-card",
+    "dev:server": "npx kill-port 3000 && node scripts/run-with-venv.js nodemon server.js",
     "dev:client": "cd client && npm run dev",
     "test": "cd client && npm run lint && npm run test",
     "test:coverage": "cd client && npm run lint && npm run test:coverage",
+    "open:app": "open http://localhost:3000",
+    "start:open": "npm run start & npx wait-on -t 60000 http://localhost:3000/api/config && npm run open:app",
+    "open:coverage": "open \"$(ls -t client/coverage-reports/*.html 2>/dev/null | head -1)\"",
     "build:with-coverage": "npm run build && npm run test:coverage"
   },
   "dependencies": {
@@ -44,6 +44,8 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
-    "nodemon": "^3.1.9"
+    "kill-port": "^2.0.1",
+    "nodemon": "^3.1.9",
+    "wait-on": "^9.0.4"
   }
 }

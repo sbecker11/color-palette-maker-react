@@ -16,7 +16,7 @@ import {
   normalizeMetaPaletteRegion,
 } from './AppHelpers';
 import Header from './components/Header';
-import TitleCardOverlay from './components/TitleCardOverlay';
+import AboutOverlay from './components/AboutOverlay';
 import UploadForm from './components/UploadForm';
 import ImageLibrary from './components/ImageLibrary';
 import PaletteDisplay from './components/PaletteDisplay';
@@ -54,7 +54,7 @@ function App() {
   const { regions, isDeleteRegionMode, regionsDetecting } = regionsState;
   const [showMatchPaletteSwatches, setShowMatchPaletteSwatches] = useState(false);
   const [pairingsNeeded, setPairingsNeeded] = useState(false);
-  const [showTitleCard, setShowTitleCard] = useState(false);
+  const [showAbout, setShowAbout] = useState(true);
   // One palette swatch may map to zero or more overlays (sync highlight between panel swatch and image overlays)
   const [hoveredSwatchIndex, setHoveredSwatchIndex] = useState(null);
 
@@ -153,8 +153,8 @@ function App() {
 
   useEffect(() => {
     api.getConfig().then((data) => {
-      if (data?.titleCard) {
-        setShowTitleCard(true);
+      if (data?.about === false) {
+        setShowAbout(false);
       }
     });
   }, []);
@@ -673,13 +673,14 @@ function App() {
 
   return (
     <>
-      {showTitleCard && (
-        <TitleCardOverlay onClose={() => setShowTitleCard(false)} />
+      {showAbout && (
+        <AboutOverlay onClose={() => { setShowAbout(false); window.scrollTo(0, 0); }} />
       )}
       <Header
         theme={theme}
         onToggleTheme={toggleTheme}
-        onTitleClick={() => setShowTitleCard(true)}
+        onTitleClick={() => setShowAbout(true)}
+        onAboutClick={() => setShowAbout(true)}
       />
       <main>
         <div id="leftPanel">

@@ -246,4 +246,74 @@ describe('ImageLibrary', () => {
     const link = document.querySelector('a[href="/uploads/unknown"]');
     expect(link).toBeInTheDocument();
   });
+
+  it('shows No images stored when images is null', () => {
+    render(
+      <ImageLibrary images={null} isLoading={false} onSelectImage={vi.fn()} />
+    );
+    expect(screen.getByText(/no images stored/i)).toBeInTheDocument();
+  });
+
+  it('does not apply selected-image when selectedMeta references different image', () => {
+    const metaA = { ...mockMeta, cachedFilePath: '/uploads/img-a.jpeg' };
+    const metaB = { ...mockMeta, cachedFilePath: '/uploads/img-b.jpeg' };
+    render(
+      <ImageLibrary
+        images={[metaA, metaB]}
+        selectedMeta={metaA}
+        isLoading={false}
+        onSelectImage={vi.fn()}
+      />
+    );
+    const items = document.querySelectorAll('#fileList li');
+    expect(items[0]).toHaveClass('selected-image');
+    expect(items[1]).not.toHaveClass('selected-image');
+  });
+
+  it('does not throw when onReorder is undefined and reorder buttons are clicked', () => {
+    const images = [
+      { ...mockMeta, cachedFilePath: '/uploads/img-a.jpeg' },
+      { ...mockMeta, cachedFilePath: '/uploads/img-b.jpeg' },
+    ];
+    render(
+      <ImageLibrary images={images} isLoading={false} onSelectImage={vi.fn()} />
+    );
+    const topButtons = screen.getAllByLabelText(/move to top/i);
+    const topBtn = topButtons.find((b) => !b.disabled);
+    expect(topBtn).toBeTruthy();
+    expect(() => fireEvent.click(topBtn)).not.toThrow();
+  });
+
+  it('does not throw when onSelectImage is undefined and link is clicked', () => {
+    render(<ImageLibrary images={[mockMeta]} isLoading={false} />);
+    const link = screen.getByRole('link', { name: /Test/i });
+    expect(() => fireEvent.click(link)).not.toThrow();
+  });
+
+  it('prevents default on link click', () => {
+    const onSelectImage = vi.fn();
+    render(
+      <ImageLibrary
+        images={[mockMeta]}
+        isLoading={false}
+        onSelectImage={onSelectImage}
+      />
+    );
+    const link = screen.getByRole('link', { name: /Test/i });
+    const event = new MouseEvent('click', { bubbles: true });
+    const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
+    fireEvent(link, event);
+    expect(preventDefaultSpy).toHaveBeenCalled();
+  });
+
+  it('shows dimensions when meta has width and height', () => {
+    render(
+      <ImageLibrary
+        images={[mockMeta]}
+        isLoading={false}
+        onSelectImage={vi.fn()}
+      />
+    );
+    expect(screen.getByText(/100x100/)).toBeInTheDocument();
+  });
 });

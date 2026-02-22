@@ -22,6 +22,10 @@ describe('utils', () => {
     it('returns null when cachedFilePath is missing', () => {
       expect(getFilenameFromMeta({})).toBe(null);
     });
+
+    it('handles Windows-style path with backslash', () => {
+      expect(getFilenameFromMeta({ cachedFilePath: 'C:\\uploads\\img-123.jpeg' })).toBe('img-123.jpeg');
+    });
   });
 
   describe('getFilenameWithoutExt', () => {
@@ -35,6 +39,11 @@ describe('utils', () => {
 
     it('returns filename as-is when no extension', () => {
       expect(getFilenameWithoutExt('noext')).toBe('noext');
+    });
+
+    it('returns empty string for null or non-string', () => {
+      expect(getFilenameWithoutExt(null)).toBe('');
+      expect(getFilenameWithoutExt(123)).toBe('');
     });
   });
 
@@ -53,6 +62,14 @@ describe('utils', () => {
 
     it('returns N/A for non-number', () => {
       expect(formatFileSize('invalid')).toBe('N/A');
+    });
+
+    it('formats 1025 bytes as KB', () => {
+      expect(formatFileSize(1025)).toBe('1.0 KB');
+    });
+
+    it('formats 1048577 bytes as MB', () => {
+      expect(formatFileSize(1024 * 1024 + 1)).toBe('1.00 MB');
     });
   });
 
@@ -85,6 +102,15 @@ describe('utils', () => {
     it('returns empty string for invalid input', () => {
       expect(formatHexDisplay('')).toBe('');
       expect(formatHexDisplay(null)).toBe('');
+    });
+
+    it('adds # prefix when hex has no leading #', () => {
+      expect(formatHexDisplay('ff0000')).toBe('#ff0000');
+    });
+
+    it('returns as-is for partial hex that does not match #rrggbb or #rgb', () => {
+      expect(formatHexDisplay('#a')).toBe('#a');
+      expect(formatHexDisplay('#12')).toBe('#12');
     });
   });
 });

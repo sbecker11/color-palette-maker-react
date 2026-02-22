@@ -1,4 +1,4 @@
-function Header({ theme, onToggleTheme, onTitleClick }) {
+function Header({ theme, onToggleTheme, onTitleClick, onAboutClick }) {
   return (
     <header>
       <h1>
@@ -22,9 +22,14 @@ function Header({ theme, onToggleTheme, onTitleClick }) {
         </span>
         <span className="header-tech">React • Vite</span>
       </h1>
-      <button id="themeToggleButton" onClick={onToggleTheme}>
+      <nav style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {onAboutClick && (
+          <a href="/about.html" className="header-about-link" onClick={(e) => { e.preventDefault(); onAboutClick(); }}>About</a>
+        )}
+        <button id="themeToggleButton" onClick={onToggleTheme}>
         {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
       </button>
+      </nav>
     </header>
   );
 }

@@ -149,4 +149,59 @@ describe('UploadForm', () => {
     fireEvent.click(screen.getByRole('button', { name: /submit/i }));
     expect(screen.getByRole('button', { name: /processing/i })).toBeInTheDocument();
   });
+
+  it('renders without message prop and shows empty message area', () => {
+    render(<UploadForm onSubmit={vi.fn()} />);
+    const msgArea = document.getElementById('messageArea');
+    expect(msgArea).toBeInTheDocument();
+    expect(msgArea).toHaveTextContent('');
+  });
+
+  it('applies message-success class when message is not error', () => {
+    render(
+      <UploadForm
+        onSubmit={vi.fn()}
+        message={{ text: 'Success!', isError: false }}
+      />
+    );
+    const msgArea = screen.getByText('Success!').closest('.messageArea');
+    expect(msgArea).toHaveClass('message-success');
+  });
+
+  it('trims URL before validation and submit', async () => {
+    const onSubmit = vi.fn().mockResolvedValue({ success: true });
+    render(<UploadForm onSubmit={onSubmit} message={{ text: '', isError: false }} />);
+    const urlInput = screen.getByLabelText(/image url/i);
+    fireEvent.change(urlInput, { target: { value: '  https://example.com/img.jpg  ' } });
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+    const formData = onSubmit.mock.calls[0][0];
+    expect(formData.get('imageUrl')).toBe('https://example.com/img.jpg');
+  });
+
+  it('calls onSubmit with error when URL is only whitespace', async () => {
+    const onSubmit = vi.fn();
+    render(<UploadForm onSubmit={onSubmit} message={{ text: '', isError: false }} />);
+    fireEvent.change(screen.getByLabelText(/image url/i), {
+      target: { value: '   ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /submit/i }));
+    expect(onSubmit).toHaveBeenCalledWith({
+      success: false,
+      message: 'Image URL is required.',
+    });
+  });
+
+  it('shows file input group when file mode is selected', () => {
+    render(<UploadForm onSubmit={vi.fn()} message={{ text: '', isError: false }} />);
+    fireEvent.click(screen.getByLabelText(/upload local file/i));
+    const fileGroup = document.getElementById('fileInputGroup');
+    expect(fileGroup).not.toHaveClass('hidden');
+  });
+
+  it('hides URL input group when file mode is selected', () => {
+    render(<UploadForm onSubmit={vi.fn()} message={{ text: '', isError: false }} />);
+    fireEvent.click(screen.getByLabelText(/upload local file/i));
+    const urlGroup = document.getElementById('urlInputGroup');
+    expect(urlGroup).toHaveClass('hidden');
+  });
 });

@@ -7,5 +7,5 @@ uploads
 *.md
 .DS_Store
 client/coverage
-client/coverage-report-*.html
+client/coverage-reports
 image_metadata.jsonl

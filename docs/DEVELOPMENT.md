@@ -154,7 +154,7 @@ cd client && npm run test:watch
 **Coverage:**
 
 ```bash
-# Run lint, then generate coverage report (saved to client directory)
+# Run lint, then generate coverage report (saved to client/coverage-reports/)
 npm run test:coverage
 
 # Build, then run lint and coverage (no server start)

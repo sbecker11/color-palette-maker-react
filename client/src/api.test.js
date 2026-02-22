@@ -13,6 +13,16 @@ describe('api', () => {
     global.fetch = originalFetch;
   });
 
+  it('getConfig fetches /api/config', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ success: true }),
+    });
+    const result = await api.getConfig();
+    expect(global.fetch).toHaveBeenCalledWith('/api/config');
+    expect(result).toEqual({ success: true });
+  });
+
   it('getImages fetches /api/images', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
@@ -47,6 +57,25 @@ describe('api', () => {
     const result = await api.getImages();
 
     expect(result).toEqual({ success: false, message: 'HTTP 404' });
+  });
+
+  it('handleResponse returns {} when response.json() rejects', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.reject(new Error('Invalid JSON')),
+    });
+    const result = await api.getImages();
+    expect(result).toEqual({});
+  });
+
+  it('handleResponse returns HTTP status when json rejects on error response', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: () => Promise.reject(new Error('Invalid JSON')),
+    });
+    const result = await api.getImages();
+    expect(result).toEqual({ success: false, message: 'HTTP 500' });
   });
 
   it('upload posts to /upload with FormData', async () => {
@@ -244,6 +273,56 @@ describe('api', () => {
     const result = await api.detectRegions('img-123.jpeg');
     expect(global.fetch).toHaveBeenCalledWith('/api/regions/img-123.jpeg', { method: 'POST' });
     expect(result).toEqual({ success: true, regions: [[[0, 0], [10, 0]]] });
+  });
+
+  it('generatePalette does not add k param when out of range', async () => {
+    global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true, palette: [] }) });
+    await api.generatePalette('img.jpeg', { k: 1 });
+    expect(global.fetch).toHaveBeenCalledWith('/api/palette/img.jpeg', expect.any(Object));
+    const callUrl = global.fetch.mock.calls[0][0];
+    expect(callUrl).not.toContain('k=');
+  });
+
+  it('generatePalette does not add k param when k is 21', async () => {
+    global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true, palette: [] }) });
+    await api.generatePalette('img.jpeg', { k: 21 });
+    const callUrl = global.fetch.mock.calls[0][0];
+    expect(callUrl).not.toContain('k=');
+  });
+
+  it('savePalette omits swatchLabels when length does not match colorPalette', async () => {
+    global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) });
+    await api.savePalette('img.jpeg', ['#ff0000', '#00ff00'], ['A']);
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: JSON.stringify({ colorPalette: ['#ff0000', '#00ff00'] }),
+      })
+    );
+  });
+
+  it('saveMetadata omits regionLabels when length does not match regions', async () => {
+    global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) });
+    const regions = [[[0, 0], [10, 0], [10, 10]]];
+    await api.saveMetadata('img.jpeg', { regions, regionLabels: ['A', 'B'] });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: JSON.stringify({ regions }),
+      })
+    );
+  });
+
+  it('saveMetadata omits regionLabels when not an array', async () => {
+    global.fetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) });
+    const regions = [[[0, 0], [10, 0], [10, 10]]];
+    await api.saveMetadata('img.jpeg', { regions, regionLabels: 'not-array' });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: JSON.stringify({ regions }),
+      })
+    );
   });
 
   it('saveMetadata includes regionLabels when regions and valid regionLabels provided', async () => {

@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 
-function TitleCardOverlay({ onClose }) {
+function AboutOverlay({ onClose }) {
   useEffect(() => {
     const handler = (e) => {
-      if (e.data?.type === 'title-card-close') onClose();
+      if (e.data?.type === 'about-close') onClose();
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
@@ -30,8 +30,8 @@ function TitleCardOverlay({ onClose }) {
       }}
     >
       <iframe
-        src="/movie/title-card.html"
-        title="Color Palette Maker Title Card"
+        src={import.meta.env.MODE === 'test' ? 'about:blank' : '/about.html'}
+        title="Color Palette Maker — About"
         style={{
           width: '100%',
           height: '100%',
@@ -43,4 +43,4 @@ function TitleCardOverlay({ onClose }) {
   );
 }
 
-export default TitleCardOverlay;
+export default AboutOverlay;

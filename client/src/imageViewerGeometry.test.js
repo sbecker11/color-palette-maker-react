@@ -57,6 +57,24 @@ describe('imageViewerGeometry', () => {
       const shrunk = shrinkPolygon(line, 2);
       expect(shrunk).toHaveLength(2);
     });
+
+    it('handles vertex exactly at centroid (len=0 fallback)', () => {
+      // Centroid of [[0,0],[10,0],[5,0]] is (5,0); vertex (5,0) is at centroid
+      const poly = [[0, 0], [10, 0], [5, 0]];
+      const shrunk = shrinkPolygon(poly, 2);
+      expect(shrunk).toHaveLength(3);
+      expect(shrunk[2]).toEqual([5, 0]);
+    });
+
+    it('shrinks with px larger than distance to centroid', () => {
+      const square = [[0, 0], [10, 0], [10, 10], [0, 10]];
+      const shrunk = shrinkPolygon(square, 100);
+      expect(shrunk).toHaveLength(4);
+      shrunk.forEach(([x, y]) => {
+        expect(x).toBeCloseTo(5, 5);
+        expect(y).toBeCloseTo(5, 5);
+      });
+    });
   });
 
   describe('polygonToPath', () => {

@@ -2,7 +2,7 @@ node_modules/
 venv/
 .git/
 client/coverage/
-client/coverage-report-*.html
+client/coverage-reports/
 
 # macOS
 .DS_Store
