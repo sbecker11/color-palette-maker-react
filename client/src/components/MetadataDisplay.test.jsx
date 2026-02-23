@@ -18,7 +18,7 @@ describe('MetadataDisplay', () => {
       createdDateTime: '2025-01-01T00:00:00Z',
     };
     render(<MetadataDisplay meta={meta} />);
-    expect(screen.getByText(/img-123.jpeg/i)).toBeInTheDocument();
+    expect(screen.getByRole('list')).toHaveTextContent('img-123.jpeg');
     expect(screen.getByText(/100 x 200/i)).toBeInTheDocument();
     expect(screen.getByText('Format:', { exact: false })).toBeInTheDocument();
   });

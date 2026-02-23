@@ -1,10 +1,17 @@
 import { getFilenameFromMeta, formatFileSize } from '../utils';
 
+function formatRegionParams(obj) {
+  if (!obj || typeof obj !== 'object') return 'N/A';
+  const entries = Object.entries(obj).filter(([, v]) => v != null && v !== '');
+  if (entries.length === 0) return '—';
+  return entries.map(([k, v]) => `${k}: ${v}`).join(', ');
+}
+
 function MetadataDisplay({ meta }) {
   if (!meta) {
     return (
       <div id="metadataDisplay">
-        <h3>Palette image info</h3>
+        <h3>Palette Info</h3>
         <span className="placeholder">Select an image from the list below.</span>
       </div>
     );
@@ -31,42 +38,42 @@ function MetadataDisplay({ meta }) {
   const filename = getFilenameFromMeta(meta) || 'unknown';
   const numSwatches = Array.isArray(meta.colorPalette) ? meta.colorPalette.length : 0;
   const numRegions = Array.isArray(meta.regions) ? meta.regions.length : 0;
+  const swatchLabelsStr = Array.isArray(meta.swatchLabels) && meta.swatchLabels.length > 0
+    ? meta.swatchLabels.join(', ')
+    : 'N/A';
+  const regionLabelsStr = Array.isArray(meta.regionLabels) && meta.regionLabels.length > 0
+    ? meta.regionLabels.join(', ')
+    : 'N/A';
   const dimensions =
     meta.width && meta.height ? `${meta.width} x ${meta.height}` : 'N/A';
   const format = meta.format || 'N/A';
-  const sizeStr = formatFileSize(meta.fileSizeBytes);
+  const sizeStr = meta.fileSizeBytes != null ? formatFileSize(meta.fileSizeBytes) : 'N/A';
   const added = meta.createdDateTime
     ? new Date(meta.createdDateTime).toLocaleString()
     : 'N/A';
+  const regionStrategy = meta.regionStrategy ?? 'N/A';
+  const regionParamsStr = formatRegionParams(meta.regionParams);
+  const paletteRegionCount = Array.isArray(meta.paletteRegion) ? meta.paletteRegion.length : 0;
 
   return (
     <div id="metadataDisplay">
-      <h3>Palette image info</h3>
+      <h3>Palette Info</h3>
       <ul>
-        <li>
-          <strong>Filename:</strong> {filename}
-        </li>
-        <li>
-          <strong># Swatches:</strong> {numSwatches}
-        </li>
-        <li>
-          <strong># Regions:</strong> {numRegions}
-        </li>
-        <li>
-          <strong>Dimensions:</strong> {dimensions}
-        </li>
-        <li>
-          <strong>Format:</strong> {format}
-        </li>
-        <li>
-          <strong>Size:</strong> {sizeStr}
-        </li>
-        <li>
-          <strong>Source:</strong> {source}
-        </li>
-        <li>
-          <strong>Added:</strong> {added}
-        </li>
+        <li><strong>Palette name:</strong> {meta.paletteName ?? 'N/A'}</li>
+        <li><strong>Filename:</strong> {filename}</li>
+        <li><strong>Cached path:</strong> {meta.cachedFilePath ?? 'N/A'}</li>
+        <li><strong># Swatches:</strong> {numSwatches}</li>
+        <li><strong>Swatch labels:</strong> {swatchLabelsStr}</li>
+        <li><strong>Dimensions:</strong> {dimensions}</li>
+        <li><strong>Format:</strong> {format}</li>
+        <li><strong>Size:</strong> {sizeStr}</li>
+        <li><strong>Source:</strong> {source}</li>
+        <li><strong>Added:</strong> {added}</li>
+        <li><strong># Regions:</strong> {numRegions}</li>
+        <li><strong>Region labels:</strong> {regionLabelsStr}</li>
+        <li><strong>Region strategy:</strong> {regionStrategy}</li>
+        <li><strong>Region params:</strong> {regionParamsStr}</li>
+        <li><strong>Palette region markers:</strong> {paletteRegionCount > 0 ? `${paletteRegionCount} markers` : 'N/A'}</li>
       </ul>
     </div>
   );

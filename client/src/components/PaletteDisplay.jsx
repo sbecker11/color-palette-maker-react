@@ -147,6 +147,84 @@ function RegionDetectionForm({ selectedMeta, onDetectRegions, regionsDetecting }
   );
 }
 
+function RegionDetectionAndActions({
+  selectedMeta,
+  hasRegions,
+  hasPalette,
+  isGenerating,
+  regionsDetecting,
+  actionSelect,
+  setActionSelect,
+  paletteNameInputRef,
+  onDetectRegions,
+  onDelete,
+  onDuplicate,
+  onExport,
+  onRegenerateWithK,
+  onToggleSamplingMode,
+  onClearAllSwatches,
+  onEnterDeleteRegionMode,
+  onDeleteRegions,
+}) {
+  const hasStoredRegions = selectedMeta?.regions && Array.isArray(selectedMeta.regions) && selectedMeta.regions.length > 0;
+  const [showRegionDetection, setShowRegionDetection] = useState(hasStoredRegions);
+
+  return (
+    <>
+      {showRegionDetection && (
+        <RegionDetectionForm
+          selectedMeta={selectedMeta}
+          onDetectRegions={onDetectRegions}
+          regionsDetecting={regionsDetecting}
+        />
+      )}
+      <div id="paletteActionsRow">
+        <select
+          id="paletteActionsSelect"
+          aria-label="Choose action"
+          value={actionSelect}
+          onChange={(e) => {
+            const v = e.target.value;
+            setActionSelect('');
+            if (v === 'rename') {
+              paletteNameInputRef?.current?.focus();
+              paletteNameInputRef?.current?.select();
+            } else if (v === 'delete') {
+              setTimeout(() => onDelete?.(), 0);
+            } else if (v === 'duplicate') onDuplicate?.();
+            else if (v === 'export') onExport?.();
+            else if (v === 'kmeans5') onRegenerateWithK?.(5);
+            else if (v === 'kmeans7') onRegenerateWithK?.(7);
+            else if (v === 'kmeans9') onRegenerateWithK?.(9);
+            else if (v === 'enterAddingSwatches') onToggleSamplingMode?.();
+            else if (v === 'clearSwatches') onClearAllSwatches?.();
+            else if (v === 'detectRegions') setShowRegionDetection(true);
+            else if (v === 'enterDeleteRegionMode') onEnterDeleteRegionMode?.();
+            else if (v === 'deleteRegions') onDeleteRegions?.();
+          }}
+          disabled={!selectedMeta || isGenerating || regionsDetecting}
+        >
+          <option value="" disabled>Choose action…</option>
+          <option value="rename">Rename Palette</option>
+          <option value="duplicate">(Dup)licate Palette</option>
+          <option value="delete">(Del)ete Palette</option>
+          <option value="export">Export Palette</option>
+          <option value="" disabled>-------</option>
+          <option value="kmeans5">Find K-Means Swatches (5){hasRegions ? ' (by regions)' : ''}</option>
+          <option value="kmeans7">Find K-Means Swatches (7){hasRegions ? ' (by regions)' : ''}</option>
+          <option value="kmeans9">Find K-Means Swatches (9){hasRegions ? ' (by regions)' : ''}</option>
+          <option value="enterAddingSwatches">Adding Swatches (click)</option>
+          <option value="clearSwatches" disabled={!hasPalette}>Clear all Swatches</option>
+          <option value="" disabled>--------</option>
+          <option value="detectRegions">Detect All Regions</option>
+          <option value="enterDeleteRegionMode" disabled={!hasRegions}>Deleting Regions (click)</option>
+          <option value="deleteRegions" disabled={!hasRegions}>Clear all Regions</option>
+        </select>
+      </div>
+    </>
+  );
+}
+
 function PaletteDisplay({
   palette,
   swatchLabels = [],
@@ -179,7 +257,6 @@ function PaletteDisplay({
   palettePanelRef,
 }) {
   const [actionSelect, setActionSelect] = useState('');
-  const [showRegionDetection, setShowRegionDetection] = useState(false);
   const paletteNameInputRef = useRef(null);
   const hasPalette = palette && Array.isArray(palette) && palette.length > 0;
   const showPlaceholder = !isGenerating && !hasPalette;
@@ -317,58 +394,26 @@ function PaletteDisplay({
           Deleting regions (click)
         </label>
       </div>
-      {showRegionDetection && (
-        <RegionDetectionForm
-          key={getFilenameFromMeta(selectedMeta) ?? 'none'}
-          selectedMeta={selectedMeta}
-          onDetectRegions={onDetectRegions}
-          regionsDetecting={regionsDetecting}
-        />
-      )}
-      <div id="paletteActionsRow">
-        <select
-          id="paletteActionsSelect"
-          aria-label="Choose action"
-          value={actionSelect}
-          onChange={(e) => {
-            const v = e.target.value;
-            setActionSelect('');
-            if (v === 'rename') {
-              paletteNameInputRef.current?.focus();
-              paletteNameInputRef.current?.select();
-            } else if (v === 'delete') {
-              setTimeout(() => onDelete?.(), 0);
-            }
-            else if (v === 'duplicate') onDuplicate?.();
-            else if (v === 'export') onExport?.();
-            else if (v === 'kmeans5') onRegenerateWithK?.(5);
-            else if (v === 'kmeans7') onRegenerateWithK?.(7);
-            else if (v === 'kmeans9') onRegenerateWithK?.(9);
-            else if (v === 'enterAddingSwatches') onToggleSamplingMode?.();
-            else if (v === 'clearSwatches') onClearAllSwatches?.();
-            else if (v === 'detectRegions') setShowRegionDetection(true);
-            else if (v === 'enterDeleteRegionMode') onEnterDeleteRegionMode?.();
-            else if (v === 'deleteRegions') onDeleteRegions?.();
-          }}
-          disabled={!selectedMeta || isGenerating || regionsDetecting}
-        >
-          <option value="" disabled>Choose action…</option>
-          <option value="rename">Rename Palette</option>
-          <option value="duplicate">(Dup)licate Palette</option>
-          <option value="delete">(Del)ete Palette</option>
-          <option value="export">Export Palette</option>
-          <option value="" disabled>-------</option>
-          <option value="kmeans5">Find K-Means Swatches (5){hasRegions ? ' (by regions)' : ''}</option>
-          <option value="kmeans7">Find K-Means Swatches (7){hasRegions ? ' (by regions)' : ''}</option>
-          <option value="kmeans9">Find K-Means Swatches (9){hasRegions ? ' (by regions)' : ''}</option>
-          <option value="enterAddingSwatches">Adding Swatches (click)</option>
-          <option value="clearSwatches" disabled={!hasPalette}>Clear all Swatches</option>
-          <option value="" disabled>--------</option>
-          <option value="detectRegions">Detect All Regions</option>
-          <option value="enterDeleteRegionMode" disabled={!hasRegions}>Deleting Regions (click)</option>
-          <option value="deleteRegions" disabled={!hasRegions}>Clear all Regions</option>
-        </select>
-      </div>
+      <RegionDetectionAndActions
+        key={getFilenameFromMeta(selectedMeta) ?? 'none'}
+        selectedMeta={selectedMeta}
+        hasRegions={hasRegions}
+        hasPalette={hasPalette}
+        isGenerating={isGenerating}
+        regionsDetecting={regionsDetecting}
+        actionSelect={actionSelect}
+        setActionSelect={setActionSelect}
+        paletteNameInputRef={paletteNameInputRef}
+        onDetectRegions={onDetectRegions}
+        onDelete={onDelete}
+        onDuplicate={onDuplicate}
+        onExport={onExport}
+        onRegenerateWithK={onRegenerateWithK}
+        onToggleSamplingMode={onToggleSamplingMode}
+        onClearAllSwatches={onClearAllSwatches}
+        onEnterDeleteRegionMode={onEnterDeleteRegionMode}
+        onDeleteRegions={onDeleteRegions}
+      />
       <MetadataDisplay meta={selectedMeta} />
     </div>
   );
