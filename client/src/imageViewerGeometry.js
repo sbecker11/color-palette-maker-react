@@ -1,21 +1,10 @@
 /**
- * Pure geometry helpers for ImageViewer (polygon centroid, shrink, SVG path).
- * Extracted for testability.
- * 
- * NOTE: polygonCentroid is duplicated in image_processor.js (server-side).
- * Keep both implementations in sync if making changes.
+ * Pure geometry helpers for ImageViewer (polygon shrink, SVG path).
+ * polygonCentroid from shared/polygonCentroid.js.
  */
+import { polygonCentroid } from '../../shared/polygonCentroid.js';
 
-export function polygonCentroid(poly) {
-  if (!poly || poly.length === 0) return [0, 0];
-  let sx = 0, sy = 0;
-  for (const [x, y] of poly) {
-    sx += x;
-    sy += y;
-  }
-  return [sx / poly.length, sy / poly.length];
-}
-
+export { polygonCentroid };
 export function shrinkPolygon(poly, px) {
   if (!poly || poly.length < 2) return poly;
   const [cx, cy] = polygonCentroid(poly);

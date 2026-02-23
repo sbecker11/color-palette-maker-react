@@ -41,7 +41,7 @@ pip install -r requirements.txt
 | [User Guide](docs/USER_GUIDE.md) | Features, key actions, color sampling, region workflow |
 | [API Reference](docs/API.md) | REST endpoints, request/response formats |
 | [Architecture](docs/ARCHITECTURE.md) | Region & palette pipeline, data flow, storage format |
-| [Development](docs/DEVELOPMENT.md) | Setup, build, test, Docker, project structure |
+| [Development](docs/DEVELOPMENT.md) | Setup, build, test, Docker, project structure, contributing |
 | [Future Work](docs/FUTURE-WORK.md) | Improvement backlog, SPA/SaaS migration outlines |
 | [Single-User SPA → Docker Compose](docs/Single-User-SPA-DockerCompose-migration.md) | Multi-service orchestration outline |
 | [Multi-User SaaS → Kubernetes](docs/Multi-User-SaaS-Kubernetes-migration.md) | Kubernetes migration outline |

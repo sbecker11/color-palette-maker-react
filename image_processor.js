@@ -1,6 +1,7 @@
 // Handles image processing, specifically palette generation using K-means and luminance threshold filtering.
 
 const getPixels = require('get-pixels');
+const { polygonCentroid } = require('./shared/polygonCentroid.cjs');
 const { clusterize } = require('node-kmeans'); // Import K-means
 const colorDiff = require('color-diff');
 
@@ -231,21 +232,6 @@ function centroidsToPalette(centroidsRgb, options = {}) {
 
     const finalCentroids = merged.slice(0, maxColors);
     return finalCentroids.map(item => rgbToHex(item.rgb));
-}
-
-/**
- * Polygon centroid.
- * NOTE: This function is duplicated in client/src/imageViewerGeometry.js.
- * Keep both implementations in sync if making changes.
- */
-function polygonCentroid(poly) {
-    if (!poly || poly.length === 0) return [0, 0];
-    let sx = 0, sy = 0;
-    for (const pt of poly) {
-        sx += pt[0];
-        sy += pt[1];
-    }
-    return [sx / poly.length, sy / poly.length];
 }
 
 /**

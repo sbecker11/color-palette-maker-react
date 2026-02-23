@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useReducer, useRef } from 'react';
 import api from './api';
-import { getFilenameFromMeta, getFilenameWithoutExt } from './utils';
+import { getFilenameFromMeta, getFilenameWithoutExt, isSelectedImage } from './utils';
 import {
   needsPaletteGeneration,
   getNextSelectionAfterDeletion,
@@ -71,14 +71,14 @@ function App() {
     setPairingsNeeded(false);
     api.refreshPairings(filename).then((result) => {
       if (result.success && Array.isArray(result.paletteRegion)) {
-        setSelectedMeta((prev) => prev && getFilenameFromMeta(prev) === filename ? { ...prev, paletteRegion: result.paletteRegion } : prev);
+        setSelectedMeta((prev) => isSelectedImage(prev, filename) ? { ...prev, paletteRegion: result.paletteRegion } : prev);
         setImages((prev) =>
-          prev.map((m) =>
-            getFilenameFromMeta(m) === filename ? { ...m, paletteRegion: result.paletteRegion } : m
-          )
+          prev.map((m) => (isSelectedImage(m, filename) ? { ...m, paletteRegion: result.paletteRegion } : m))
         );
       }
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('[App] refreshPairings failed:', err);
+    });
   }, [showMatchPaletteSwatches, pairingsNeeded, selectedMeta, regionsState.regions]);
 
   // Apply theme to document
@@ -276,7 +276,8 @@ function App() {
           setImages(prevImages);
           showMessage(result.message || 'Failed to reorder.', true);
         }
-      } catch {
+      } catch (err) {
+        console.error('[App] handleReorder failed:', err);
         setImages(prevImages);
         showMessage('Failed to reorder.', true);
       }
@@ -292,7 +293,7 @@ function App() {
         const result = await api.deleteImage(filename);
         if (result.success) {
           showMessage('Image deleted successfully.');
-          const wasSelected = selectedMeta && getFilenameFromMeta(selectedMeta) === filename;
+          const wasSelected = isSelectedImage(selectedMeta, filename);
           setImages((prev) => prev.filter((m) => getFilenameFromMeta(m) !== filename));
           if (wasSelected) {
             setSelectedMeta(null);

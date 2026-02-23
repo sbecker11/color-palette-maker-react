@@ -150,13 +150,3 @@ export function applyRegionsToMeta(meta, regions) {
   return { ...meta, regions, regionLabels };
 }
 
-/**
- * Returns images array with regions and regionLabels updated for the file matching filename.
- */
-export function applyRegionsToImages(images, filename, regions) {
-  if (!images) return [];
-  const regionLabels = computeRegionLabels(regions);
-  return images.map((m) =>
-    getFilenameFromMeta(m) === filename ? { ...m, regions, regionLabels } : m
-  );
-}

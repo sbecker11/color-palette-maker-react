@@ -12,7 +12,6 @@ import {
   computeSwatchLabels,
   computeRegionLabels,
   applyRegionsToMeta,
-  applyRegionsToImages,
   normalizeMetaPaletteRegion,
 } from './AppHelpers';
 
@@ -250,23 +249,6 @@ describe('AppHelpers', () => {
     });
     it('returns null when meta is null', () => {
       expect(applyRegionsToMeta(null, [[0, 0]])).toBe(null);
-    });
-  });
-
-  describe('applyRegionsToImages', () => {
-    it('updates only matching image with regions and regionLabels', () => {
-      const images = [
-        { cachedFilePath: '/a.jpeg' },
-        { cachedFilePath: '/b.jpeg' },
-      ];
-      const regions = [[0, 0]];
-      const result = applyRegionsToImages(images, 'b.jpeg', regions);
-      expect(result[0]).toBe(images[0]);
-      expect(result[1]).toEqual({
-        cachedFilePath: '/b.jpeg',
-        regions: [[0, 0]],
-        regionLabels: ['00'],
-      });
     });
   });
 

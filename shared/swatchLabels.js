@@ -1,6 +1,7 @@
 /**
  * Shared swatch label utilities (A, B, C, ..., AA, ...).
  * ESM for client (Vite). Server uses shared/swatchLabels.cjs.
+ * @module shared/swatchLabels
  */
 
 /**

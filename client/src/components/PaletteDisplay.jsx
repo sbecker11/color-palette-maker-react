@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { formatHexDisplay, getFilenameFromMeta } from '../utils';
 import MetadataDisplay from './MetadataDisplay';
+import { VALID_STRATEGIES, REGION_STRATEGIES, STRATEGIES_WITH_PARAMS } from '../../../shared/regionStrategies.js';
 
 const DEFAULT_REGION_PARAMS = {
   adaptiveBlockSize: 11,
@@ -11,8 +12,6 @@ const DEFAULT_REGION_PARAMS = {
   watershedDistRatio: 0.5,
 };
 
-const VALID_STRATEGIES = ['default', 'adaptive', 'otsu', 'canny', 'color', 'watershed'];
-
 function RegionDetectionForm({ selectedMeta, onDetectRegions, regionsDetecting }) {
   const s = selectedMeta?.regionStrategy;
   const p = selectedMeta?.regionParams;
@@ -20,7 +19,7 @@ function RegionDetectionForm({ selectedMeta, onDetectRegions, regionsDetecting }
   const initialParams = p && typeof p === 'object' ? { ...DEFAULT_REGION_PARAMS, ...p } : DEFAULT_REGION_PARAMS;
   const [regionStrategy, setRegionStrategy] = useState(initialStrategy);
   const [regionParams, setRegionParams] = useState(initialParams);
-  const hasStrategyParams = ['adaptive', 'canny', 'color', 'watershed'].includes(regionStrategy);
+  const hasStrategyParams = STRATEGIES_WITH_PARAMS.includes(regionStrategy);
   const buildDetectParams = () => {
     const opts = {};
     if (regionStrategy === 'adaptive') {
@@ -36,14 +35,6 @@ function RegionDetectionForm({ selectedMeta, onDetectRegions, regionsDetecting }
     }
     return opts;
   };
-  const regionStrategies = [
-    { value: 'default', label: 'Default (cascade)' },
-    { value: 'adaptive', label: 'Adaptive' },
-    { value: 'otsu', label: 'Otsu' },
-    { value: 'canny', label: 'Canny' },
-    { value: 'color', label: 'Color K-means' },
-    { value: 'watershed', label: 'Watershed' },
-  ];
   return (
     <div id="regionDetectionSection">
       <div id="regionDetectionRow">
@@ -55,7 +46,7 @@ function RegionDetectionForm({ selectedMeta, onDetectRegions, regionsDetecting }
           onChange={(e) => setRegionStrategy(e.target.value)}
           disabled={!selectedMeta || regionsDetecting}
         >
-          {regionStrategies.map((strat) => (
+          {REGION_STRATEGIES.map((strat) => (
             <option key={strat.value} value={strat.value}>
               {strat.label}
             </option>

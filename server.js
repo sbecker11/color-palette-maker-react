@@ -13,6 +13,7 @@ const sharp = require('sharp');
 const metadataHandler = require('./metadata_handler');
 const imageProcessor = require('./image_processor');
 const { computeSwatchLabels } = require('./shared/swatchLabels.cjs');
+const { VALID_STRATEGIES } = require('./shared/regionStrategies.cjs');
 
 const app = express();
 const port = parseInt(process.env.PORT, 10) || 3000;
@@ -25,6 +26,13 @@ function getPaletteRegion(meta) {
     if (Array.isArray(meta?.paletteRegion)) return meta.paletteRegion;
     if (Array.isArray(meta?.clusterMarkers)) return meta.clusterMarkers;
     return [];
+}
+
+/** Read metadata and find index for filename. Returns { allMetadata, idx } or { allMetadata, idx: -1 }. Throws on read error. */
+async function getMetadataForFilename(filename) {
+    const allMetadata = await metadataHandler.readMetadata();
+    const idx = allMetadata.findIndex((e) => path.basename(e.cachedFilePath || '') === filename);
+    return { allMetadata, idx };
 }
 
 // --- Configuration ---
@@ -193,7 +201,7 @@ app.post('/api/regions/:filename', express.json(), async (req, res) => {
     if (!fs.existsSync(scriptPath)) {
         return res.status(500).json({ success: false, message: 'Region detection script not found.' });
     }
-    const strategy = ['default', 'adaptive', 'otsu', 'canny', 'color', 'watershed'].includes(req.body?.strategy)
+    const strategy = VALID_STRATEGIES.includes(req.body?.strategy)
         ? req.body.strategy
         : 'default';
     const procArgs = [scriptPath, imagePath, '--strategy', strategy];
@@ -233,8 +241,17 @@ app.post('/api/regions/:filename', express.json(), async (req, res) => {
             proc.on('error', reject);
         });
         // Persist regions to metadata and compute region markers (centroid + average color) for each region
-        const allMetadata = await metadataHandler.readMetadata();
-        const idx = allMetadata.findIndex((e) => path.basename(e.cachedFilePath || '') === filename);
+        let metaResult;
+        try {
+            metaResult = await getMetadataForFilename(filename);
+        } catch (readErr) {
+            console.error('[API POST /regions] Error reading metadata:', readErr);
+            return res.status(500).json({ success: false, message: 'Failed to read metadata.' });
+        }
+        if (metaResult.idx === -1) {
+            return res.status(404).json({ success: false, message: 'Image metadata not found.' });
+        }
+        const { allMetadata, idx } = metaResult;
         let paletteRegion = [];
         if (idx >= 0) {
             const regions = result.regions || [];
@@ -283,20 +300,17 @@ app.post('/api/palette/:filename', express.json(), async (req, res) => {
         return res.status(400).json({ success: false, message: 'Invalid filename.' });
     }
 
-    let allMetadata;
+    let metaResult;
     try {
-        allMetadata = await metadataHandler.readMetadata();
+        metaResult = await getMetadataForFilename(filename);
     } catch (readError) {
         console.error("[API POST /palette] Error reading metadata:", readError);
         return res.status(500).json({ success: false, message: 'Failed to read image metadata.' });
     }
-
-    const imageIndex = allMetadata.findIndex(entry => path.basename(entry.cachedFilePath || '') === filename);
-
-    if (imageIndex === -1) {
+    if (metaResult.idx === -1) {
         return res.status(404).json({ success: false, message: 'Image metadata not found.' });
     }
-
+    const { allMetadata, idx: imageIndex } = metaResult;
     const imageMeta = allMetadata[imageIndex];
     const forceRegenerate = req.query.regenerate === 'true' || req.body?.regenerate === true;
     const kParam = req.query.k ?? req.body?.k;
@@ -366,20 +380,17 @@ app.put('/api/palette/:filename', express.json(), async (req, res) => { // Use e
     const validLabels = Array.isArray(swatchLabels) && swatchLabels.length === updatedPalette.length &&
         swatchLabels.every(l => typeof l === 'string' && l.length > 0);
 
-    let allMetadata;
+    let metaResult;
     try {
-        allMetadata = await metadataHandler.readMetadata();
+        metaResult = await getMetadataForFilename(filename);
     } catch (readError) {
         console.error("[API PUT /palette] Error reading metadata:", readError);
         return res.status(500).json({ success: false, message: 'Failed to read image metadata.' });
     }
-
-    const imageIndex = allMetadata.findIndex(entry => path.basename(entry.cachedFilePath || '') === filename);
-
-    if (imageIndex === -1) {
+    if (metaResult.idx === -1) {
         return res.status(404).json({ success: false, message: 'Image metadata not found.' });
     }
-
+    const { allMetadata, idx: imageIndex } = metaResult;
     console.log(`[API PUT /palette] Updating palette for ${filename} with ${updatedPalette.length} colors.`);
     // Update the palette and swatchLabels in the metadata array
     allMetadata[imageIndex].colorPalette = updatedPalette;
@@ -402,16 +413,16 @@ app.post('/api/pairings/:filename', async (req, res) => {
     if (!validateFilename(filename)) {
         return res.status(400).json({ success: false, message: 'Invalid filename.' });
     }
-    let allMetadata;
+    let metaResult;
     try {
-        allMetadata = await metadataHandler.readMetadata();
+        metaResult = await getMetadataForFilename(filename);
     } catch (readError) {
         return res.status(500).json({ success: false, message: 'Could not read metadata.' });
     }
-    const imageIndex = allMetadata.findIndex(entry => path.basename(entry.cachedFilePath || '') === filename);
-    if (imageIndex === -1) {
+    if (metaResult.idx === -1) {
         return res.status(404).json({ success: false, message: 'Image not found.' });
     }
+    const { allMetadata, idx: imageIndex } = metaResult;
     const meta = allMetadata[imageIndex];
     const palette = Array.isArray(meta.colorPalette) ? meta.colorPalette : [];
     const regions = Array.isArray(meta.regions) ? meta.regions : [];
@@ -460,20 +471,17 @@ app.put('/api/metadata/:filename', express.json(), async (req, res) => {
         return res.status(400).json({ success: false, message: 'Provide paletteName and/or regions.' });
     }
 
-    let allMetadata;
+    let metaResult;
     try {
-        allMetadata = await metadataHandler.readMetadata();
+        metaResult = await getMetadataForFilename(filename);
     } catch (readError) {
         console.error("[API PUT /metadata] Error reading metadata:", readError);
         return res.status(500).json({ success: false, message: 'Failed to read image metadata.' });
     }
-
-    const imageIndex = allMetadata.findIndex(entry => path.basename(entry.cachedFilePath || '') === filename);
-
-    if (imageIndex === -1) {
+    if (metaResult.idx === -1) {
         return res.status(404).json({ success: false, message: 'Image metadata not found.' });
     }
-
+    const { allMetadata, idx: imageIndex } = metaResult;
     if (paletteName !== undefined) {
         allMetadata[imageIndex].paletteName = paletteName.trim();
     }
@@ -578,18 +586,16 @@ app.post('/api/images/:filename/duplicate', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Invalid filename.' });
     }
 
-    let allMetadata;
+    let metaResult;
     try {
-        allMetadata = await metadataHandler.readMetadata();
+        metaResult = await getMetadataForFilename(filename);
     } catch (readError) {
         return res.status(500).json({ success: false, message: 'Failed to read metadata.' });
     }
-
-    const imageIndex = allMetadata.findIndex(entry => path.basename(entry.cachedFilePath || '') === filename);
-    if (imageIndex === -1) {
+    if (metaResult.idx === -1) {
         return res.status(404).json({ success: false, message: 'Image metadata not found.' });
     }
-
+    const { allMetadata, idx: imageIndex } = metaResult;
     const sourceMeta = allMetadata[imageIndex];
     const sourcePath = path.join(uploadsDir, filename);
 
@@ -664,28 +670,17 @@ app.delete('/api/images/:filename', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Invalid filename.' });
     }
 
-    let allMetadata;
+    let metaResult;
     try {
-        allMetadata = await metadataHandler.readMetadata();
+        metaResult = await getMetadataForFilename(filenameToDelete);
     } catch (readError) {
         return res.status(500).json({ success: false, message: 'Failed to read metadata.' });
     }
-
-    let foundEntry = null;
-    let foundIndex = -1;
-    const filteredMetadata = allMetadata.filter((entry, index) => {
-        const entryFilename = path.basename(entry.cachedFilePath || '');
-        if (entryFilename === filenameToDelete) {
-            foundEntry = entry;
-            foundIndex = index;
-            return false; // Exclude from filtered list
-        }
-        return true;
-    });
-
-    if (foundIndex === -1) {
+    if (metaResult.idx === -1) {
         return res.status(404).json({ success: false, message: 'Image metadata not found.' });
     }
+    const { allMetadata } = metaResult;
+    const filteredMetadata = allMetadata.filter((entry) => path.basename(entry.cachedFilePath || '') !== filenameToDelete);
 
     try {
         // 1. Delete the actual image file

@@ -7,6 +7,11 @@ export function getFilenameFromMeta(meta) {
   return meta.cachedFilePath.split(/[/\\]/).pop();
 }
 
+/** Returns true if meta corresponds to the given filename. */
+export function isSelectedImage(meta, filename) {
+  return meta != null && getFilenameFromMeta(meta) === filename;
+}
+
 export function getFilenameWithoutExt(filename) {
   if (!filename || typeof filename !== 'string') return '';
   return filename.includes('.') ? filename.substring(0, filename.lastIndexOf('.')) : filename;
