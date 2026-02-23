@@ -39,7 +39,7 @@ function RegionDetectionForm({ selectedMeta, onDetectRegions, regionsDetecting, 
   // Sync App's regionStrategy when form's initial strategy comes from selectedMeta (e.g. Template already selected)
   useEffect(() => {
     onRegionStrategyChange?.(initialStrategy);
-  }, [initialStrategy]);
+  }, [initialStrategy, onRegionStrategyChange]);
 
   const handleStrategyChange = (e) => {
     const v = e.target.value;

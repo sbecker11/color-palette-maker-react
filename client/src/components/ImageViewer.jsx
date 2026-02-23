@@ -115,18 +115,22 @@ const ImageViewer = forwardRef(function ImageViewer({
   useClickOutsideToExit(isDeleteRegionMode, onExitDeleteRegionMode, viewerRef, palettePanelRef);
   useClickOutsideToExit(isSamplingMode, onExitAddingSwatchesMode, viewerRef, palettePanelRef);
 
-  // Clear template draw when exiting mode or changing image
+  // Clear template draw when exiting mode or changing image (defer setState to avoid set-state-in-effect)
   useEffect(() => {
     if (!isTemplateDrawMode) {
-      setTemplateDrawStart(null);
-      setTemplateDrawCurrent(null);
       templateDrawPointerIdRef.current = null;
+      queueMicrotask(() => {
+        setTemplateDrawStart(null);
+        setTemplateDrawCurrent(null);
+      });
     }
   }, [isTemplateDrawMode]);
   useEffect(() => {
-    setTemplateDrawStart(null);
-    setTemplateDrawCurrent(null);
     templateDrawPointerIdRef.current = null;
+    queueMicrotask(() => {
+      setTemplateDrawStart(null);
+      setTemplateDrawCurrent(null);
+    });
   }, [imageUrl]);
 
   useEffect(() => {
