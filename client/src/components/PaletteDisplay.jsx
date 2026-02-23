@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { formatHexDisplay, getFilenameFromMeta } from '../utils';
 import MetadataDisplay from './MetadataDisplay';
 import { VALID_STRATEGIES, REGION_STRATEGIES, STRATEGIES_WITH_PARAMS } from '../../../shared/regionStrategies.js';
@@ -35,6 +35,12 @@ function RegionDetectionForm({ selectedMeta, onDetectRegions, regionsDetecting, 
   const [regionStrategy, setRegionStrategy] = useState(initialStrategy);
   const [regionParams, setRegionParams] = useState(initialParams);
   const hasStrategyParams = STRATEGIES_WITH_PARAMS.includes(regionStrategy);
+
+  // Sync App's regionStrategy when form's initial strategy comes from selectedMeta (e.g. Template already selected)
+  useEffect(() => {
+    onRegionStrategyChange?.(initialStrategy);
+  }, [initialStrategy]);
+
   const handleStrategyChange = (e) => {
     const v = e.target.value;
     setRegionStrategy(v);

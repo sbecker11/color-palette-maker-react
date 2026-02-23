@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Template match (draw box)**: For region detection method "Template match", click **Detect** → draw a box on the image (click center, drag to size, release); detection runs on release. Button label cycles **Click** → **Drag** → **Detect**. Click **Detect** again to clear regions and repeat with a new box. Correlation uses gradient magnitude (brightness-invariant).
+- When a palette already has regions and Region Detection shows a method (e.g. Template), app syncs that method so clicking **Detect** immediately continues with it (no need to re-select the method).
 - Auto-select moved palette after reordering (top/bottom/up/down buttons)
 - Unit tests for ErrorBoundary component
 - Additional unit tests for App, ImageViewer, and api modules to improve coverage

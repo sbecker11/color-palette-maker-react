@@ -44,7 +44,7 @@ Region detection runs a Python subprocess (`scripts/detect_regions.py`) using Op
 | **Quadtree** | Flat designs, UI mockups, geometric layouts | Recursive split by variance |
 | **Circles** | Round shapes, buttons, coins, eyes | Hough circle transform |
 | **Rectangles** | Panels, windows, screens, documents, UI | 4-vertex contour approx |
-| **Template match** | Many identical shapes (e.g. swatch grid) | Sample one region → normalized cross-correlation → find all similar |
+| **Template match** | Many identical shapes (e.g. swatch grid) | User draws one box (center + drag); gradient-magnitude correlation finds all similar regions (brightness-invariant). |
 | **Adaptive** | Varying illumination | Adaptive threshold on grayscale |
 | **Otsu** | Bimodal (light/dark) images | Global threshold |
 | **Canny** | Edge-based regions | Canny edges + dilation |
@@ -52,7 +52,7 @@ Region detection runs a Python subprocess (`scripts/detect_regions.py`) using Op
 | **Watershed** | Touching objects | Distance transform + watershed |
 | **Default** | Auto fallback | Cascade through strategies until regions found |
 
-Detected regions are returned as polygons (arrays of `[x, y]` vertices). The server invokes this script via `POST /api/regions/:filename` when you click "Detect Regions."
+Detected regions are returned as polygons (arrays of `[x, y]` vertices). The server invokes this script via `POST /api/regions/:filename` when you click **Detect**. For **Template match**, the client sends a user-drawn `templateBox` (center + drag on the image); the script uses gradient-magnitude correlation so dark and bright regions match equally.
 
 ---
 

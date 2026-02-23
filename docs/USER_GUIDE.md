@@ -60,7 +60,7 @@ Browse, select, delete, reorder (move to top/bottom or step up/down), and duplic
 | **Reorder (⏫ ⏬ ⬆️ ⬇️)** | Left column: ⏫ move to top, ⏬ move to bottom. Inner column: ⬆️ move up one, ⬇️ move down one. Order persisted to server. Note: New uploads always appear at the top regardless of manual reordering. |
 | **Palette Name** | Edit in the input and blur or press Enter to save. Persisted automatically. |
 | **Regenerate (K-means)** | Replace palette with freshly computed colors from the image. Choose K=5, 7, or 9. |
-| **Detect Regions** | Python/OpenCV subprocess detects large regions. Use K-means to extract colors only from masked regions. |
+| **Detect Regions** | Python/OpenCV detects large regions. Choose a **Detection method** (e.g. Default, Template match), then click **Detect**. For **Template match**: click **Detect** → button shows **Click** → click on image for template center, drag to size box, release to run detection (button shows **Drag** while dragging). Click **Detect** again to clear and draw a new template. When a palette already has regions and Region Detection shows a method (e.g. Template), clicking **Detect** continues with that method. |
 | **Remove Region (click)** | Enter delete mode; click region boundaries to remove. Click outside to exit. |
 | **Clear all Regions** | Remove all detected regions at once. |
 | **Adding swatches** | Toggle to enter/exit manual swatch creation mode. Cursor shows +; click palette image to add color. |

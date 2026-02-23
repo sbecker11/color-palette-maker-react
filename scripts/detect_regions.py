@@ -493,6 +493,18 @@ def _translate_polygon(poly, dx, dy):
     return [[int(p[0] + dx), int(p[1] + dy)] for p in poly]
 
 
+def _gradient_magnitude(img):
+    """Single-channel gradient magnitude (invariant to brightness). Input BGR or gray."""
+    if len(img.shape) == 3:
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = img
+    gx = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
+    gy = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
+    mag = np.sqrt(gx * gx + gy * gy)
+    return np.uint8(np.clip(mag, 0, 255))
+
+
 def _strategy_template_match(img, min_area, max_regions, min_radius_ratio=0.02, max_radius_ratio=0.45,
                              contour_circles_circularity=0.75, match_threshold=0.7, min_dist_ratio=0.8,
                              template_box=None):
@@ -509,9 +521,10 @@ def _strategy_template_match(img, min_area, max_regions, min_radius_ratio=0.02, 
         th = max(5, min(int(th), h - y))
         template_crop = img[y : y + th, x : x + tw]
         tc_h, tc_w = template_crop.shape[:2]
-        template_gray = cv2.cvtColor(template_crop, cv2.COLOR_BGR2GRAY)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        result = cv2.matchTemplate(gray, template_gray, cv2.TM_CCOEFF_NORMED)
+        # Gradient magnitude: matches structure/edges, invariant to brightness (treats dark and bright equally)
+        img_grad = _gradient_magnitude(img)
+        template_grad = _gradient_magnitude(template_crop)
+        result = cv2.matchTemplate(img_grad, template_grad, cv2.TM_CCOEFF_NORMED)
         min_dist_px = int(max(tc_w, tc_h) * min_dist_ratio)
         min_dist_px = max(2, min_dist_px)
         peaks = _local_maxima_2d(result.copy(), match_threshold, min_dist_px)
@@ -566,10 +579,10 @@ def _strategy_template_match(img, min_area, max_regions, min_radius_ratio=0.02, 
         return [template_poly][:max_regions]
     template_crop = img[y1:y2, x1:x2]
     tc_h, tc_w = template_crop.shape[:2]
-    # Match in grayscale for speed and stability
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    template_gray = cv2.cvtColor(template_crop, cv2.COLOR_BGR2GRAY)
-    result = cv2.matchTemplate(gray, template_gray, cv2.TM_CCOEFF_NORMED)
+    # Gradient magnitude: matches structure/edges, invariant to brightness
+    img_grad = _gradient_magnitude(img)
+    template_grad = _gradient_magnitude(template_crop)
+    result = cv2.matchTemplate(img_grad, template_grad, cv2.TM_CCOEFF_NORMED)
     min_dist_px = int(max(tc_w, tc_h) * min_dist_ratio)
     min_dist_px = max(2, min_dist_px)
     peaks = _local_maxima_2d(result.copy(), match_threshold, min_dist_px)
