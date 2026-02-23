@@ -296,6 +296,14 @@ Same variables apply to both. For local dev, defaults are usually fine. For prod
 
 > **Note:** `.env` is gitignored. Never commit secrets. For production, set variables in your deploy environment or use the same `.env` approach on the host.
 
+### Client (Vite)
+
+The React app reads `VITE_*` variables at build time. Create `client/.env` from `client/.env.example` to override.
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_HIGHLIGHT_REGION_ON_ROLLOVER` | No | Whether to highlight region interiors (fill/stroke) on hover. Set to `false` or `0` to disable. Default `true`. |
+
 ---
 
 ## Vite Proxy Configuration

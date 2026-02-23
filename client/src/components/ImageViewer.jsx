@@ -2,6 +2,13 @@ import { forwardRef, useEffect, useRef, useState } from 'react';
 import { rgbToHex, formatHexDisplay } from '../utils';
 import { shrinkPolygon, polygonToPath } from '../imageViewerGeometry';
 
+// Region interior highlight on rollover (controlled by VITE_HIGHLIGHT_REGION_ON_ROLLOVER)
+const HIGHLIGHT_REGION_ON_ROLLOVER = (() => {
+  const v = import.meta.env.VITE_HIGHLIGHT_REGION_ON_ROLLOVER;
+  if (v === undefined || v === '') return true;
+  return v !== 'false' && v !== '0';
+})();
+
 // Small "x" cursor for Deleting regions mode when hovering over a region
 const CURSOR_DELETE_X = `url("data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path stroke="#000" stroke-width="2" d="M4 4l12 12M16 4L4 16" fill="none"/></svg>'
@@ -370,10 +377,10 @@ const ImageViewer = forwardRef(function ImageViewer({
                 }}
                 onClick={(e) => {
                   if (!isDeleteRegionMode) return;
-                  const target = e.target;
-                  if (target.dataset.regionIndex != null) {
+                  const el = e.target.closest?.('[data-region-index]');
+                  if (el) {
                     e.stopPropagation();
-                    onRegionClick?.(parseInt(target.dataset.regionIndex, 10));
+                    onRegionClick?.(parseInt(el.dataset.regionIndex, 10));
                   }
                 }}
                 onMouseLeave={() => {
@@ -391,7 +398,7 @@ const ImageViewer = forwardRef(function ImageViewer({
                     : -1;
                   const isRegionHovered = hoveredRegionIndex === i;
                   const isSwatchMatchHighlighted = showMatchPaletteSwatches && hoveredSwatchIndex === paletteIdxForRegion;
-                  const isBoundaryHighlighted = isRegionHovered || isSwatchMatchHighlighted;
+                  const isBoundaryHighlighted = HIGHLIGHT_REGION_ON_ROLLOVER && (isRegionHovered || isSwatchMatchHighlighted);
                   return (
                     <path
                       key={`region-${i}`}
@@ -449,6 +456,7 @@ const ImageViewer = forwardRef(function ImageViewer({
                     <g
                       key={`region-display-${i}`}
                       className="region-display"
+                      data-region-index={i}
                       aria-label={`Region ${regionLabel}`}
                       onMouseEnter={() => {
                         setHoveredRegionIndex(i);
@@ -591,10 +599,10 @@ const ImageViewer = forwardRef(function ImageViewer({
                 }}
                 onClick={(e) => {
                   if (!isDeleteRegionMode) return;
-                  const target = e.target;
-                  if (target.dataset.regionIndex != null) {
+                  const el = e.target.closest?.('[data-region-index]');
+                  if (el) {
                     e.stopPropagation();
-                    onRegionClick?.(parseInt(target.dataset.regionIndex, 10));
+                    onRegionClick?.(parseInt(el.dataset.regionIndex, 10));
                   }
                 }}
                 onMouseLeave={() => {
@@ -612,7 +620,7 @@ const ImageViewer = forwardRef(function ImageViewer({
                     : -1;
                   const isRegionHovered = hoveredRegionIndex === i;
                   const isSwatchMatchHighlighted = showMatchPaletteSwatches && hoveredSwatchIndex === paletteIdxForRegion;
-                  const isBoundaryHighlighted = isRegionHovered || isSwatchMatchHighlighted;
+                  const isBoundaryHighlighted = HIGHLIGHT_REGION_ON_ROLLOVER && (isRegionHovered || isSwatchMatchHighlighted);
                   return (
                     <path
                       key={`region-${i}`}
@@ -669,6 +677,7 @@ const ImageViewer = forwardRef(function ImageViewer({
                     <g
                       key={`region-display-${i}`}
                       className="region-display"
+                      data-region-index={i}
                       aria-label={`Region ${regionLabel}`}
                       onMouseEnter={() => {
                         setHoveredRegionIndex(i);
