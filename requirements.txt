@@ -1,2 +1,4 @@
-opencv-python>=4.8.0
+# Use opencv-contrib-python for SLIC superpixels (includes opencv-python + contrib modules).
+# If SLIC is not needed, opencv-python is sufficient for other strategies.
+opencv-contrib-python>=4.8.0
 numpy>=1.24.0

@@ -19,11 +19,13 @@ npm install
 # 2. Install client dependencies (React app)
 cd client && npm install && cd ..
 
-# 3. Create venv and install Python dependencies (opencv-python, numpy) for region detection
+# 3. Create venv and install Python dependencies (opencv-contrib-python, numpy) for region detection
 python3 -m venv venv
 source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+**Note:** The project uses `opencv-contrib-python` (not `opencv-python`) for the SLIC superpixel strategy. If you only need other strategies, `opencv-python` is sufficient.
 
 The development and production build scripts activate the Python venv before starting the backend server, so region detection works in both environments. If you run the server manually, activate the venv first or the server will auto-detect `./venv` when present.
 

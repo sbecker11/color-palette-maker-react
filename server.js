@@ -212,6 +212,29 @@ app.post('/api/regions/:filename', express.json(), async (req, res) => {
     addArg('--canny-high', req.body?.cannyHigh);
     addArg('--color-clusters', req.body?.colorClusters);
     addArg('--watershed-dist-ratio', req.body?.watershedDistRatio);
+    addArg('--grabcut-rect-pad', req.body?.grabcutRectPad);
+    addArg('--grabcut-iter-count', req.body?.grabcutIterCount);
+    addArg('--slic-region-size', req.body?.slicRegionSize);
+    addArg('--slic-ruler', req.body?.slicRuler);
+    addArg('--meanshift-spatial', req.body?.meanshiftSpatial);
+    addArg('--meanshift-color', req.body?.meanshiftColor);
+    addArg('--quadtree-variance', req.body?.quadtreeVariance);
+    addArg('--quadtree-min-size', req.body?.quadtreeMinSize);
+    addArg('--circles-min-radius-ratio', req.body?.circlesMinRadiusRatio);
+    addArg('--circles-max-radius-ratio', req.body?.circlesMaxRadiusRatio);
+    addArg('--circles-param1', req.body?.circlesParam1);
+    addArg('--circles-param2', req.body?.circlesParam2);
+    addArg('--circles-min-dist-ratio', req.body?.circlesMinDistRatio);
+    addArg('--contour-circles-circularity', req.body?.contourCirclesCircularity);
+    addArg('--template-match-threshold', req.body?.templateMatchThreshold);
+    addArg('--template-match-min-dist-ratio', req.body?.templateMatchMinDistRatio);
+    addArg('--rectangles-epsilon-ratio', req.body?.rectanglesEpsilonRatio);
+    if (req.body?.templateBox && typeof req.body.templateBox === 'object') {
+      const { x, y, width, height } = req.body.templateBox;
+      if (typeof x === 'number' && typeof y === 'number' && typeof width === 'number' && typeof height === 'number') {
+        procArgs.push('--template-box', `${Math.round(x)},${Math.round(y)},${Math.round(width)},${Math.round(height)}`);
+      }
+    }
     try {
         const pythonCmd = getRegionDetectionPython();
         const result = await new Promise((resolve, reject) => {
@@ -280,6 +303,23 @@ app.post('/api/regions/:filename', express.json(), async (req, res) => {
             if (req.body?.cannyHigh != null) regionParams.cannyHigh = req.body.cannyHigh;
             if (req.body?.colorClusters != null) regionParams.colorClusters = req.body.colorClusters;
             if (req.body?.watershedDistRatio != null) regionParams.watershedDistRatio = req.body.watershedDistRatio;
+            if (req.body?.grabcutRectPad != null) regionParams.grabcutRectPad = req.body.grabcutRectPad;
+            if (req.body?.grabcutIterCount != null) regionParams.grabcutIterCount = req.body.grabcutIterCount;
+            if (req.body?.slicRegionSize != null) regionParams.slicRegionSize = req.body.slicRegionSize;
+            if (req.body?.slicRuler != null) regionParams.slicRuler = req.body.slicRuler;
+            if (req.body?.meanshiftSpatial != null) regionParams.meanshiftSpatial = req.body.meanshiftSpatial;
+            if (req.body?.meanshiftColor != null) regionParams.meanshiftColor = req.body.meanshiftColor;
+            if (req.body?.quadtreeVariance != null) regionParams.quadtreeVariance = req.body.quadtreeVariance;
+            if (req.body?.quadtreeMinSize != null) regionParams.quadtreeMinSize = req.body.quadtreeMinSize;
+            if (req.body?.circlesMinRadiusRatio != null) regionParams.circlesMinRadiusRatio = req.body.circlesMinRadiusRatio;
+            if (req.body?.circlesMaxRadiusRatio != null) regionParams.circlesMaxRadiusRatio = req.body.circlesMaxRadiusRatio;
+            if (req.body?.circlesParam1 != null) regionParams.circlesParam1 = req.body.circlesParam1;
+            if (req.body?.circlesParam2 != null) regionParams.circlesParam2 = req.body.circlesParam2;
+            if (req.body?.circlesMinDistRatio != null) regionParams.circlesMinDistRatio = req.body.circlesMinDistRatio;
+            if (req.body?.contourCirclesCircularity != null) regionParams.contourCirclesCircularity = req.body.contourCirclesCircularity;
+            if (req.body?.templateMatchThreshold != null) regionParams.templateMatchThreshold = req.body.templateMatchThreshold;
+            if (req.body?.templateMatchMinDistRatio != null) regionParams.templateMatchMinDistRatio = req.body.templateMatchMinDistRatio;
+            if (req.body?.rectanglesEpsilonRatio != null) regionParams.rectanglesEpsilonRatio = req.body.rectanglesEpsilonRatio;
             allMetadata[idx].regionStrategy = strategy;
             allMetadata[idx].regionParams = regionParams;
             await metadataHandler.rewriteMetadata(allMetadata);

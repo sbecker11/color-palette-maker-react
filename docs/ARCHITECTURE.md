@@ -33,14 +33,26 @@ This document describes how regions, region colors, K-means clustering, and over
 
 ## 1. How region boundaries are computed
 
-Region detection runs a Python subprocess (`scripts/detect_regions.py`) using OpenCV. The script applies:
+Region detection runs a Python subprocess (`scripts/detect_regions.py`) using OpenCV. Available strategies:
 
-- Adaptive thresholding
-- Otsu binarization
-- Canny edge detection
-- Color-based segmentation (LAB K-means on the color wheel)
+| Strategy | Best for | Approach |
+|----------|----------|----------|
+| **GrabCut** | Product shots, portraits, subject on plain background | Foreground/background segmentation with center rect |
+| **SLIC** | Natural photos, gradients, textures | Superpixels (requires opencv-contrib-python) |
+| **Saliency** | Main subject in photos | Attention-based saliency map |
+| **Mean shift** | Gradients, skies, fabrics, soft boundaries | Color+spatial clustering |
+| **Quadtree** | Flat designs, UI mockups, geometric layouts | Recursive split by variance |
+| **Circles** | Round shapes, buttons, coins, eyes | Hough circle transform |
+| **Rectangles** | Panels, windows, screens, documents, UI | 4-vertex contour approx |
+| **Template match** | Many identical shapes (e.g. swatch grid) | Sample one region → normalized cross-correlation → find all similar |
+| **Adaptive** | Varying illumination | Adaptive threshold on grayscale |
+| **Otsu** | Bimodal (light/dark) images | Global threshold |
+| **Canny** | Edge-based regions | Canny edges + dilation |
+| **Color** | Distinct color blocks | LAB K-means segmentation |
+| **Watershed** | Touching objects | Distance transform + watershed |
+| **Default** | Auto fallback | Cascade through strategies until regions found |
 
-to identify large, distinct regions. Detected regions are returned as polygons (arrays of `[x, y]` vertices). The server invokes this script via `POST /api/regions/:filename` when you click "Detect Regions."
+Detected regions are returned as polygons (arrays of `[x, y]` vertices). The server invokes this script via `POST /api/regions/:filename` when you click "Detect Regions."
 
 ---
 

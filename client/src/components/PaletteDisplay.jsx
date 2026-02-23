@@ -10,9 +10,24 @@ const DEFAULT_REGION_PARAMS = {
   cannyHigh: 150,
   colorClusters: 12,
   watershedDistRatio: 0.5,
+  grabcutRectPad: 0.1,
+  grabcutIterCount: 5,
+  slicRegionSize: 25,
+  slicRuler: 10,
+  meanshiftSpatial: 15,
+  meanshiftColor: 40,
+  quadtreeVariance: 500,
+  quadtreeMinSize: 32,
+  circlesMinRadiusRatio: 0.02,
+  circlesMaxRadiusRatio: 0.45,
+  circlesParam1: 80,
+  circlesParam2: 35,
+  circlesMinDistRatio: 0.07,
+  contourCirclesCircularity: 0.75,
+  rectanglesEpsilonRatio: 0.05,
 };
 
-function RegionDetectionForm({ selectedMeta, onDetectRegions, regionsDetecting }) {
+function RegionDetectionForm({ selectedMeta, onDetectRegions, regionsDetecting, onRegionStrategyChange, templateDrawPhase }) {
   const s = selectedMeta?.regionStrategy;
   const p = selectedMeta?.regionParams;
   const initialStrategy = s && VALID_STRATEGIES.includes(s) ? s : 'default';
@@ -20,6 +35,11 @@ function RegionDetectionForm({ selectedMeta, onDetectRegions, regionsDetecting }
   const [regionStrategy, setRegionStrategy] = useState(initialStrategy);
   const [regionParams, setRegionParams] = useState(initialParams);
   const hasStrategyParams = STRATEGIES_WITH_PARAMS.includes(regionStrategy);
+  const handleStrategyChange = (e) => {
+    const v = e.target.value;
+    setRegionStrategy(v);
+    onRegionStrategyChange?.(v);
+  };
   const buildDetectParams = () => {
     const opts = {};
     if (regionStrategy === 'adaptive') {
@@ -32,6 +52,32 @@ function RegionDetectionForm({ selectedMeta, onDetectRegions, regionsDetecting }
       opts.colorClusters = regionParams.colorClusters;
     } else if (regionStrategy === 'watershed') {
       opts.watershedDistRatio = regionParams.watershedDistRatio;
+    } else if (regionStrategy === 'grabcut') {
+      opts.grabcutRectPad = regionParams.grabcutRectPad;
+      opts.grabcutIterCount = regionParams.grabcutIterCount;
+    } else if (regionStrategy === 'slic') {
+      opts.slicRegionSize = regionParams.slicRegionSize;
+      opts.slicRuler = regionParams.slicRuler;
+    } else if (regionStrategy === 'meanshift') {
+      opts.meanshiftSpatial = regionParams.meanshiftSpatial;
+      opts.meanshiftColor = regionParams.meanshiftColor;
+    } else if (regionStrategy === 'quadtree') {
+      opts.quadtreeVariance = regionParams.quadtreeVariance;
+      opts.quadtreeMinSize = regionParams.quadtreeMinSize;
+    } else if (regionStrategy === 'circles') {
+      opts.circlesMinRadiusRatio = regionParams.circlesMinRadiusRatio;
+      opts.circlesMaxRadiusRatio = regionParams.circlesMaxRadiusRatio;
+      opts.circlesParam1 = regionParams.circlesParam1;
+      opts.circlesParam2 = regionParams.circlesParam2;
+      opts.circlesMinDistRatio = regionParams.circlesMinDistRatio;
+    } else if (regionStrategy === 'contour_circles') {
+      opts.circlesMinRadiusRatio = regionParams.circlesMinRadiusRatio;
+      opts.circlesMaxRadiusRatio = regionParams.circlesMaxRadiusRatio;
+      opts.contourCirclesCircularity = regionParams.contourCirclesCircularity;
+    } else if (regionStrategy === 'template_match') {
+      // No extra params; template box is drawn on image
+    } else if (regionStrategy === 'rectangles') {
+      opts.rectanglesEpsilonRatio = regionParams.rectanglesEpsilonRatio;
     }
     return opts;
   };
@@ -43,7 +89,7 @@ function RegionDetectionForm({ selectedMeta, onDetectRegions, regionsDetecting }
           id="regionStrategySelect"
           aria-label="Region detection approach"
           value={regionStrategy}
-          onChange={(e) => setRegionStrategy(e.target.value)}
+          onChange={handleStrategyChange}
           disabled={!selectedMeta || regionsDetecting}
         >
           {REGION_STRATEGIES.map((strat) => (
@@ -56,9 +102,9 @@ function RegionDetectionForm({ selectedMeta, onDetectRegions, regionsDetecting }
           type="button"
           onClick={() => onDetectRegions?.(regionStrategy, buildDetectParams())}
           disabled={!selectedMeta || regionsDetecting}
-          aria-label="Detect regions"
+          aria-label={regionStrategy === 'template_match' && templateDrawPhase ? (templateDrawPhase === 'drag' ? 'Drag' : 'Click') : 'Detect regions'}
         >
-          {regionsDetecting ? 'Detecting…' : 'Detect'}
+          {regionsDetecting ? 'Detecting…' : regionStrategy === 'template_match' && templateDrawPhase === 'drag' ? 'Drag' : regionStrategy === 'template_match' && templateDrawPhase === 'click' ? 'Click' : 'Detect'}
         </button>
       </div>
       {hasStrategyParams && (
@@ -141,6 +187,212 @@ function RegionDetectionForm({ selectedMeta, onDetectRegions, regionsDetecting }
               />
             </>
           )}
+          {regionStrategy === 'grabcut' && (
+            <>
+              <label htmlFor="regionParamGrabcutRectPad">Rect pad:</label>
+              <input
+                id="regionParamGrabcutRectPad"
+                type="number"
+                min={0.05}
+                max={0.3}
+                step={0.05}
+                value={regionParams.grabcutRectPad}
+                onChange={(e) => setRegionParams((prev) => ({ ...prev, grabcutRectPad: parseFloat(e.target.value) || 0.1 }))}
+                disabled={regionsDetecting}
+              />
+              <label htmlFor="regionParamGrabcutIter">Iters:</label>
+              <input
+                id="regionParamGrabcutIter"
+                type="number"
+                min={3}
+                max={10}
+                value={regionParams.grabcutIterCount}
+                onChange={(e) => setRegionParams((prev) => ({ ...prev, grabcutIterCount: parseInt(e.target.value, 10) || 5 }))}
+                disabled={regionsDetecting}
+              />
+            </>
+          )}
+          {regionStrategy === 'slic' && (
+            <>
+              <label htmlFor="regionParamSlicSize">Region size:</label>
+              <input
+                id="regionParamSlicSize"
+                type="number"
+                min={10}
+                max={100}
+                value={regionParams.slicRegionSize}
+                onChange={(e) => setRegionParams((prev) => ({ ...prev, slicRegionSize: parseInt(e.target.value, 10) || 25 }))}
+                disabled={regionsDetecting}
+              />
+              <label htmlFor="regionParamSlicRuler">Ruler:</label>
+              <input
+                id="regionParamSlicRuler"
+                type="number"
+                min={5}
+                max={40}
+                value={regionParams.slicRuler}
+                onChange={(e) => setRegionParams((prev) => ({ ...prev, slicRuler: parseFloat(e.target.value) || 10 }))}
+                disabled={regionsDetecting}
+              />
+            </>
+          )}
+          {regionStrategy === 'meanshift' && (
+            <>
+              <label htmlFor="regionParamMeanshiftSpatial">Spatial:</label>
+              <input
+                id="regionParamMeanshiftSpatial"
+                type="number"
+                min={1}
+                max={50}
+                value={regionParams.meanshiftSpatial}
+                onChange={(e) => setRegionParams((prev) => ({ ...prev, meanshiftSpatial: parseInt(e.target.value, 10) || 15 }))}
+                disabled={regionsDetecting}
+              />
+              <label htmlFor="regionParamMeanshiftColor">Color:</label>
+              <input
+                id="regionParamMeanshiftColor"
+                type="number"
+                min={1}
+                max={100}
+                value={regionParams.meanshiftColor}
+                onChange={(e) => setRegionParams((prev) => ({ ...prev, meanshiftColor: parseInt(e.target.value, 10) || 40 }))}
+                disabled={regionsDetecting}
+              />
+            </>
+          )}
+          {regionStrategy === 'quadtree' && (
+            <>
+              <label htmlFor="regionParamQuadtreeVariance">Variance:</label>
+              <input
+                id="regionParamQuadtreeVariance"
+                type="number"
+                min={100}
+                max={2000}
+                value={regionParams.quadtreeVariance}
+                onChange={(e) => setRegionParams((prev) => ({ ...prev, quadtreeVariance: parseInt(e.target.value, 10) || 500 }))}
+                disabled={regionsDetecting}
+              />
+              <label htmlFor="regionParamQuadtreeMinSize">Min size:</label>
+              <input
+                id="regionParamQuadtreeMinSize"
+                type="number"
+                min={16}
+                max={64}
+                value={regionParams.quadtreeMinSize}
+                onChange={(e) => setRegionParams((prev) => ({ ...prev, quadtreeMinSize: parseInt(e.target.value, 10) || 32 }))}
+                disabled={regionsDetecting}
+              />
+            </>
+          )}
+          {regionStrategy === 'circles' && (
+            <>
+              <label htmlFor="regionParamCirclesMinRatio">Min radius %:</label>
+              <input
+                id="regionParamCirclesMinRatio"
+                type="number"
+                min={1}
+                max={20}
+                step={0.5}
+                value={regionParams.circlesMinRadiusRatio * 100}
+                onChange={(e) => setRegionParams((prev) => ({ ...prev, circlesMinRadiusRatio: (parseFloat(e.target.value) || 2) / 100 }))}
+                disabled={regionsDetecting}
+              />
+              <label htmlFor="regionParamCirclesMaxRatio">Max radius %:</label>
+              <input
+                id="regionParamCirclesMaxRatio"
+                type="number"
+                min={4}
+                max={50}
+                step={1}
+                value={regionParams.circlesMaxRadiusRatio * 100}
+                onChange={(e) => setRegionParams((prev) => ({ ...prev, circlesMaxRadiusRatio: (parseFloat(e.target.value) || 45) / 100 }))}
+                disabled={regionsDetecting}
+              />
+              <label htmlFor="regionParamCirclesParam1">Param1 (Canny):</label>
+              <input
+                id="regionParamCirclesParam1"
+                type="number"
+                min={50}
+                max={200}
+                value={regionParams.circlesParam1}
+                onChange={(e) => setRegionParams((prev) => ({ ...prev, circlesParam1: parseInt(e.target.value, 10) || 80 }))}
+                disabled={regionsDetecting}
+              />
+              <label htmlFor="regionParamCirclesParam2">Param2 (votes):</label>
+              <input
+                id="regionParamCirclesParam2"
+                type="number"
+                min={20}
+                max={100}
+                value={regionParams.circlesParam2}
+                onChange={(e) => setRegionParams((prev) => ({ ...prev, circlesParam2: parseInt(e.target.value, 10) || 35 }))}
+                disabled={regionsDetecting}
+              />
+              <label htmlFor="regionParamCirclesMinDist">Min dist %:</label>
+              <input
+                id="regionParamCirclesMinDist"
+                type="number"
+                min={4}
+                max={15}
+                step={0.5}
+                value={regionParams.circlesMinDistRatio * 100}
+                onChange={(e) => setRegionParams((prev) => ({ ...prev, circlesMinDistRatio: (parseFloat(e.target.value) || 7) / 100 }))}
+                disabled={regionsDetecting}
+              />
+            </>
+          )}
+          {regionStrategy === 'contour_circles' && (
+            <>
+              <label htmlFor="regionParamContourCirclesMinRatio">Min radius %:</label>
+              <input
+                id="regionParamContourCirclesMinRatio"
+                type="number"
+                min={1}
+                max={20}
+                step={0.5}
+                value={regionParams.circlesMinRadiusRatio * 100}
+                onChange={(e) => setRegionParams((prev) => ({ ...prev, circlesMinRadiusRatio: (parseFloat(e.target.value) || 2) / 100 }))}
+                disabled={regionsDetecting}
+              />
+              <label htmlFor="regionParamContourCirclesMaxRatio">Max radius %:</label>
+              <input
+                id="regionParamContourCirclesMaxRatio"
+                type="number"
+                min={4}
+                max={50}
+                step={1}
+                value={regionParams.circlesMaxRadiusRatio * 100}
+                onChange={(e) => setRegionParams((prev) => ({ ...prev, circlesMaxRadiusRatio: (parseFloat(e.target.value) || 45) / 100 }))}
+                disabled={regionsDetecting}
+              />
+              <label htmlFor="regionParamContourCirclesCircularity">Circularity:</label>
+              <input
+                id="regionParamContourCirclesCircularity"
+                type="number"
+                min={0.5}
+                max={0.98}
+                step={0.05}
+                value={regionParams.contourCirclesCircularity}
+                onChange={(e) => setRegionParams((prev) => ({ ...prev, contourCirclesCircularity: parseFloat(e.target.value) || 0.75 }))}
+                disabled={regionsDetecting}
+              />
+            </>
+          )}
+          {regionStrategy === 'rectangles' && (
+            <>
+              <label htmlFor="regionParamRectEpsilon">Epsilon %:</label>
+              <input
+                id="regionParamRectEpsilon"
+                type="number"
+                min={2}
+                max={15}
+                step={0.5}
+                value={regionParams.rectanglesEpsilonRatio * 100}
+                onChange={(e) => setRegionParams((prev) => ({ ...prev, rectanglesEpsilonRatio: (parseFloat(e.target.value) || 5) / 100 }))}
+                disabled={regionsDetecting}
+              />
+            </>
+          )}
         </div>
       )}
     </div>
@@ -157,6 +409,8 @@ function RegionDetectionAndActions({
   setActionSelect,
   paletteNameInputRef,
   onDetectRegions,
+  onRegionStrategyChange,
+  templateDrawPhase,
   onDelete,
   onDuplicate,
   onExport,
@@ -175,7 +429,9 @@ function RegionDetectionAndActions({
         <RegionDetectionForm
           selectedMeta={selectedMeta}
           onDetectRegions={onDetectRegions}
+          onRegionStrategyChange={onRegionStrategyChange}
           regionsDetecting={regionsDetecting}
+          templateDrawPhase={templateDrawPhase}
         />
       )}
       <div id="paletteActionsRow">
@@ -244,6 +500,8 @@ function PaletteDisplay({
   onPaletteNameBlur,
   selectedMeta,
   onDetectRegions,
+  onRegionStrategyChange,
+  templateDrawPhase = null,
   onDeleteRegions,
   onEnterDeleteRegionMode,
   isDeleteRegionMode = false,
@@ -405,6 +663,8 @@ function PaletteDisplay({
         setActionSelect={setActionSelect}
         paletteNameInputRef={paletteNameInputRef}
         onDetectRegions={onDetectRegions}
+        onRegionStrategyChange={onRegionStrategyChange}
+        templateDrawPhase={templateDrawPhase}
         onDelete={onDelete}
         onDuplicate={onDuplicate}
         onExport={onExport}

@@ -54,6 +54,24 @@ const api = {
       cannyHigh,
       colorClusters,
       watershedDistRatio,
+      grabcutRectPad,
+      grabcutIterCount,
+      slicRegionSize,
+      slicRuler,
+      meanshiftSpatial,
+      meanshiftColor,
+      quadtreeVariance,
+      quadtreeMinSize,
+      circlesMinRadiusRatio,
+      circlesMaxRadiusRatio,
+      circlesParam1,
+      circlesParam2,
+      circlesMinDistRatio,
+      contourCirclesCircularity,
+      templateMatchThreshold,
+      templateMatchMinDistRatio,
+      rectanglesEpsilonRatio,
+      templateBox,
     } = opts;
     const body = { strategy };
     if (adaptiveBlockSize != null) body.adaptiveBlockSize = adaptiveBlockSize;
@@ -62,6 +80,24 @@ const api = {
     if (cannyHigh != null) body.cannyHigh = cannyHigh;
     if (colorClusters != null) body.colorClusters = colorClusters;
     if (watershedDistRatio != null) body.watershedDistRatio = watershedDistRatio;
+    if (grabcutRectPad != null) body.grabcutRectPad = grabcutRectPad;
+    if (grabcutIterCount != null) body.grabcutIterCount = grabcutIterCount;
+    if (slicRegionSize != null) body.slicRegionSize = slicRegionSize;
+    if (slicRuler != null) body.slicRuler = slicRuler;
+    if (meanshiftSpatial != null) body.meanshiftSpatial = meanshiftSpatial;
+    if (meanshiftColor != null) body.meanshiftColor = meanshiftColor;
+    if (quadtreeVariance != null) body.quadtreeVariance = quadtreeVariance;
+    if (quadtreeMinSize != null) body.quadtreeMinSize = quadtreeMinSize;
+    if (circlesMinRadiusRatio != null) body.circlesMinRadiusRatio = circlesMinRadiusRatio;
+    if (circlesMaxRadiusRatio != null) body.circlesMaxRadiusRatio = circlesMaxRadiusRatio;
+    if (circlesParam1 != null) body.circlesParam1 = circlesParam1;
+    if (circlesParam2 != null) body.circlesParam2 = circlesParam2;
+    if (circlesMinDistRatio != null) body.circlesMinDistRatio = circlesMinDistRatio;
+    if (contourCirclesCircularity != null) body.contourCirclesCircularity = contourCirclesCircularity;
+    if (templateMatchThreshold != null) body.templateMatchThreshold = templateMatchThreshold;
+    if (templateMatchMinDistRatio != null) body.templateMatchMinDistRatio = templateMatchMinDistRatio;
+    if (rectanglesEpsilonRatio != null) body.rectanglesEpsilonRatio = rectanglesEpsilonRatio;
+    if (templateBox != null && typeof templateBox === 'object') body.templateBox = templateBox;
     const response = await fetch(`/api/regions/${encodeURIComponent(filename)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

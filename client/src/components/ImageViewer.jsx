@@ -47,6 +47,9 @@ const ImageViewer = forwardRef(function ImageViewer({
   swatchLabels = [],
   hoveredSwatchIndex = null,
   onSwatchHover,
+  isTemplateDrawMode = false,
+  onTemplateBoxDrawn,
+  onTemplateDrawPhaseChange,
 }, ref) {
   const imgRef = useRef(null);
   const canvasRef = useRef(null);
@@ -61,6 +64,9 @@ const ImageViewer = forwardRef(function ImageViewer({
   const lastMouseEventRef = useRef(null);
   const onSampledColorChangeRef = useRef(onSampledColorChange);
   const isSamplingModeRef = useRef(isSamplingMode);
+  const [templateDrawStart, setTemplateDrawStart] = useState(null);
+  const [templateDrawCurrent, setTemplateDrawCurrent] = useState(null);
+  const templateDrawPointerIdRef = useRef(null);
 
   useEffect(() => {
     onSampledColorChangeRef.current = onSampledColorChange;
@@ -108,6 +114,69 @@ const ImageViewer = forwardRef(function ImageViewer({
 
   useClickOutsideToExit(isDeleteRegionMode, onExitDeleteRegionMode, viewerRef, palettePanelRef);
   useClickOutsideToExit(isSamplingMode, onExitAddingSwatchesMode, viewerRef, palettePanelRef);
+
+  // Clear template draw when exiting mode or changing image
+  useEffect(() => {
+    if (!isTemplateDrawMode) {
+      setTemplateDrawStart(null);
+      setTemplateDrawCurrent(null);
+      templateDrawPointerIdRef.current = null;
+    }
+  }, [isTemplateDrawMode]);
+  useEffect(() => {
+    setTemplateDrawStart(null);
+    setTemplateDrawCurrent(null);
+    templateDrawPointerIdRef.current = null;
+  }, [imageUrl]);
+
+  useEffect(() => {
+    if (!isTemplateDrawMode) {
+      onTemplateDrawPhaseChange?.(null);
+      return;
+    }
+    onTemplateDrawPhaseChange?.(templateDrawStart ? 'drag' : 'click');
+  }, [isTemplateDrawMode, templateDrawStart, onTemplateDrawPhaseChange]);
+
+  // Document-level pointer/mouse DOWN when waiting for first click (so we always capture)
+  useEffect(() => {
+    if (!isTemplateDrawMode || templateDrawStart) return;
+    const startDraw = (e) => {
+      if (!viewerRef.current?.contains(e.target)) return;
+      const coords = getCanvasCoords(e);
+      if (!coords) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setTemplateDrawStart(coords);
+      setTemplateDrawCurrent(null);
+      if (e.pointerId != null) templateDrawPointerIdRef.current = e.pointerId;
+    };
+    document.addEventListener('pointerdown', startDraw, true);
+    document.addEventListener('mousedown', startDraw, true);
+    return () => {
+      document.removeEventListener('pointerdown', startDraw, true);
+      document.removeEventListener('mousedown', startDraw, true);
+    };
+  }, [isTemplateDrawMode, templateDrawStart]);
+
+  // Document-level pointer/mouse move so drag is always captured (even when pointer leaves overlay)
+  useEffect(() => {
+    if (!isTemplateDrawMode || !templateDrawStart) return;
+    const onDocPointerMove = (e) => {
+      if (e.pointerId !== templateDrawPointerIdRef.current) return;
+      const coords = getCanvasCoords(e);
+      if (coords) setTemplateDrawCurrent(coords);
+    };
+    const onDocMouseMove = (e) => {
+      const coords = getCanvasCoords(e);
+      if (coords) setTemplateDrawCurrent(coords);
+    };
+    document.addEventListener('pointermove', onDocPointerMove);
+    document.addEventListener('mousemove', onDocMouseMove);
+    return () => {
+      document.removeEventListener('pointermove', onDocPointerMove);
+      document.removeEventListener('mousemove', onDocMouseMove);
+    };
+  }, [isTemplateDrawMode, templateDrawStart]);
 
   // Track mouse/pointer position globally and sample color on every move when in sampling mode.
   // Use refs so the listener always sees latest props (avoids stale closure after setState re-renders).
@@ -250,6 +319,17 @@ const ImageViewer = forwardRef(function ImageViewer({
 
   const handleMouseMove = (event) => {
     lastMouseEventRef.current = event;
+    if (isTemplateDrawMode && templateDrawStart) {
+      event.preventDefault();
+      event.stopPropagation();
+      const coords = getCanvasCoords(event);
+      if (coords) setTemplateDrawCurrent(coords);
+      return;
+    }
+    if (isTemplateDrawMode || isSamplingModeRef.current) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     if (!isSamplingModeRef.current) return;
     const coords = getCanvasCoords(event);
     if (!coords) {
@@ -273,11 +353,66 @@ const ImageViewer = forwardRef(function ImageViewer({
     if (isSamplingMode) {
       onSampledColorChange?.(null);
     }
+    if (isTemplateDrawMode && templateDrawStart) {
+      setTemplateDrawStart(null);
+      setTemplateDrawCurrent(null);
+      templateDrawPointerIdRef.current = null;
+    }
+  };
+
+  const handleTemplateDrawMouseDown = (event) => {
+    if (!isTemplateDrawMode) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const coords = getCanvasCoords(event);
+    if (coords) setTemplateDrawStart(coords);
+    setTemplateDrawCurrent(null);
+  };
+
+  const handleTemplateDrawPointerDown = (event) => {
+    if (!isTemplateDrawMode) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const coords = getCanvasCoords(event);
+    if (coords) {
+      setTemplateDrawStart(coords);
+      setTemplateDrawCurrent(null);
+      templateDrawPointerIdRef.current = event.pointerId;
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+  };
+
+  const handleTemplateDrawMouseUp = (event) => {
+    if (!isTemplateDrawMode || !templateDrawStart) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const center = templateDrawStart;
+    const current = getCanvasCoords(event);
+    if (current && imageSize.w > 0 && imageSize.h > 0) {
+      const dx = current.x - center.x;
+      const dy = current.y - center.y;
+      const r = Math.max(2, Math.max(Math.abs(dx), Math.abs(dy)));
+      let x = center.x - r;
+      let y = center.y - r;
+      let w = 2 * r;
+      let h = 2 * r;
+      x = Math.max(0, Math.min(x, imageSize.w - 1));
+      y = Math.max(0, Math.min(y, imageSize.h - 1));
+      w = Math.min(w, imageSize.w - x);
+      h = Math.min(h, imageSize.h - y);
+      if (w >= 5 && h >= 5) {
+        onTemplateBoxDrawn?.({ x, y, width: w, height: h });
+      }
+    }
+    setTemplateDrawStart(null);
+    setTemplateDrawCurrent(null);
+    templateDrawPointerIdRef.current = null;
   };
 
   const handleAddColorClick = (event) => {
     event.preventDefault();
     event.stopPropagation();
+    if (isTemplateDrawMode) return;
     if (!isSamplingMode) return;
 
     const coords = getCanvasCoords(event);
@@ -317,24 +452,73 @@ const ImageViewer = forwardRef(function ImageViewer({
             ref={contentRef}
             className={`image-viewer-content ${useFillMode ? 'image-viewer-content-fill' : ''}`}
           >
-            <div className="image-viewer-inner">
+            <div
+              className="image-viewer-inner"
+              onPointerDownCapture={isTemplateDrawMode ? handleTemplateDrawPointerDown : undefined}
+              onMouseDownCapture={isTemplateDrawMode ? handleTemplateDrawMouseDown : undefined}
+            >
               <img
                 ref={imgRef}
                 id="displayedImage"
                 src={imageUrl}
                 alt={imageAlt || 'Palette image'}
                 title={imageAlt || 'Palette image'}
+                draggable={false}
+                onDragStart={(e) => e.preventDefault()}
               />
+              {isTemplateDrawMode && (
+                <p className="image-viewer-template-draw-hint" aria-live="polite">
+                  Click at the template center, drag to set the box size, then release. Template match will run automatically.
+                </p>
+              )}
               <div
                 className="image-viewer-overlay"
                 style={{
-                  cursor: isSamplingMode ? 'crosshair' : isDeleteRegionMode ? 'crosshair' : 'default',
-                  pointerEvents: isSamplingMode || isDeleteRegionMode || (regions?.length > 0) ? 'auto' : 'none',
+                  cursor: isTemplateDrawMode ? 'crosshair' : isSamplingMode ? 'crosshair' : isDeleteRegionMode ? 'crosshair' : 'default',
+                  pointerEvents: isTemplateDrawMode || isSamplingMode || isDeleteRegionMode || (regions?.length > 0) ? 'auto' : 'none',
                 }}
+                onPointerDown={handleTemplateDrawPointerDown}
+                onPointerMove={handleMouseMove}
+                onPointerUp={handleTemplateDrawMouseUp}
+                onMouseDown={handleTemplateDrawMouseDown}
                 onMouseMove={handleMouseMove}
+                onMouseUp={handleTemplateDrawMouseUp}
                 onMouseLeave={handleMouseLeave}
                 onClick={handleAddColorClick}
               />
+              {isTemplateDrawMode && templateDrawStart && imageSize.w > 0 && imageSize.h > 0 && (
+                <svg
+                  className="region-overlay template-draw-overlay"
+                  viewBox={`0 0 ${imageSize.w} ${imageSize.h}`}
+                  preserveAspectRatio="xMidYMin meet"
+                  style={{ pointerEvents: 'none' }}
+                  aria-hidden="true"
+                >
+                  {(() => {
+                    const center = templateDrawStart;
+                    const current = templateDrawCurrent ?? center;
+                    const dx = current.x - center.x;
+                    const dy = current.y - center.y;
+                    const r = Math.max(2, Math.max(Math.abs(dx), Math.abs(dy)));
+                    const x = Math.max(0, center.x - r);
+                    const y = Math.max(0, center.y - r);
+                    const w = Math.min(2 * r, imageSize.w - x);
+                    const h = Math.min(2 * r, imageSize.h - y);
+                    if (w < 2 || h < 2) return null;
+                    return (
+                      <rect
+                        x={x}
+                        y={y}
+                        width={w}
+                        height={h}
+                        fill="rgba(100, 180, 255, 0.2)"
+                        stroke="rgba(80, 160, 255, 1)"
+                        strokeWidth={2}
+                      />
+                    );
+                  })()}
+                </svg>
+              )}
               {((regions?.length > 0) || (paletteRegion?.length > 0)) && imageSize.w > 0 && (
                 <svg
                   ref={regionOverlayRef}

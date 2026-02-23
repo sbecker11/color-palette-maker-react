@@ -53,7 +53,6 @@ function MetadataDisplay({ meta }) {
     : 'N/A';
   const regionStrategy = meta.regionStrategy ?? 'N/A';
   const regionParamsStr = formatRegionParams(meta.regionParams);
-  const paletteRegionCount = Array.isArray(meta.paletteRegion) ? meta.paletteRegion.length : 0;
 
   return (
     <div id="metadataDisplay">
@@ -73,7 +72,6 @@ function MetadataDisplay({ meta }) {
         <li><strong>Region labels:</strong> {regionLabelsStr}</li>
         <li><strong>Region strategy:</strong> {regionStrategy}</li>
         <li><strong>Region params:</strong> {regionParamsStr}</li>
-        <li><strong>Palette region markers:</strong> {paletteRegionCount > 0 ? `${paletteRegionCount} markers` : 'N/A'}</li>
       </ul>
     </div>
   );

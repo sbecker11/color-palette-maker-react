@@ -57,6 +57,11 @@ function App() {
   const [showAbout, setShowAbout] = useState(true);
   // One palette swatch may map to zero or more overlays (sync highlight between panel swatch and image overlays)
   const [hoveredSwatchIndex, setHoveredSwatchIndex] = useState(null);
+  // Template match: user-drawn box on image (when strategy is template_match)
+  const [templateMatchBox, setTemplateMatchBox] = useState(null);
+  const [regionStrategy, setRegionStrategy] = useState('default');
+  const [awaitingTemplateBox, setAwaitingTemplateBox] = useState(false);
+  const [templateDrawPhase, setTemplateDrawPhase] = useState(null); // 'click' | 'drag' | null
 
   // REFRESH PAIRINGS: when Match Region Swatches is on and pairingsNeeded, recompute region-to-swatch pairings
   useEffect(() => {
@@ -562,13 +567,27 @@ function App() {
       .finally(() => setPaletteGenerating(false));
   }, [selectedMeta, regions, showMessage, showMatchPaletteSwatches]);
 
-  const handleDetectRegions = useCallback(async (strategy = 'default', params = {}) => {
+  const handleDetectRegions = useCallback(async (strategy = 'default', params = {}, overrideTemplateBox = null) => {
     if (!selectedMeta) {
       showMessage('Please select an image first.', true);
       return;
     }
     const filename = getFilenameFromMeta(selectedMeta);
     if (!filename) return;
+    const templateBox = overrideTemplateBox ?? templateMatchBox;
+    if (strategy === 'template_match' && overrideTemplateBox == null) {
+      // Detect button clicked: clear regions and enter draw mode (first or repeat)
+      dispatchRegions({ type: 'SET_REGIONS', payload: [] });
+      setSelectedMeta((prev) => (prev ? { ...applyRegionsToMeta(prev, []), paletteRegion: [] } : prev));
+      setImages((prev) =>
+        prev.map((m) => (getFilenameFromMeta(m) === filename ? { ...m, ...applyRegionsToMeta(m, []), paletteRegion: [] } : m))
+      );
+      setTemplateMatchBox(null);
+      setAwaitingTemplateBox(true);
+      setTemplateDrawPhase('click');
+      showMessage('Draw a template box on the image: click at center, drag to size, then release.', true);
+      return;
+    }
     dispatchRegions({ type: 'SET_DETECTING', payload: true });
     // Clear regions before applying new detection
     dispatchRegions({ type: 'SET_REGIONS', payload: [] });
@@ -577,7 +596,11 @@ function App() {
       prev.map((m) => (getFilenameFromMeta(m) === filename ? { ...m, ...applyRegionsToMeta(m, []), paletteRegion: [] } : m))
     );
     try {
-      const result = await api.detectRegions(filename, { strategy, ...params });
+      const body = { strategy, ...params };
+      if (strategy === 'template_match' && templateBox) {
+        body.templateBox = templateBox;
+      }
+      const result = await api.detectRegions(filename, body);
       if (result.success && result.regions) {
         const newRegions = result.regions;
         const newPaletteRegions = Array.isArray(result.paletteRegion) ? result.paletteRegion : [];
@@ -617,7 +640,17 @@ function App() {
     } finally {
       dispatchRegions({ type: 'SET_DETECTING', payload: false });
     }
-  }, [selectedMeta, showMessage, showMatchPaletteSwatches]);
+  }, [selectedMeta, showMessage, showMatchPaletteSwatches, templateMatchBox]);
+
+  const handleTemplateBoxDrawn = useCallback(
+    (box) => {
+      setTemplateMatchBox(box);
+      setAwaitingTemplateBox(false);
+      setTemplateDrawPhase(null);
+      handleDetectRegions('template_match', {}, box);
+    },
+    [handleDetectRegions]
+  );
 
   const handleDeleteRegions = useCallback(async () => {
     if (!selectedMeta) return;
@@ -746,6 +779,14 @@ function App() {
           onPaletteNameBlur={handlePaletteNameBlur}
           selectedMeta={selectedMeta}
           onDetectRegions={handleDetectRegions}
+          templateDrawPhase={templateDrawPhase}
+          onRegionStrategyChange={(s) => {
+            setRegionStrategy(s);
+            if (s !== 'template_match') {
+              setAwaitingTemplateBox(false);
+              setTemplateDrawPhase(null);
+            }
+          }}
           onDeleteRegions={handleDeleteRegions}
           onEnterDeleteRegionMode={handleEnterDeleteRegionMode}
           isDeleteRegionMode={isDeleteRegionMode}
@@ -769,6 +810,9 @@ function App() {
           onSampledColorChange={setCurrentSampledColor}
           onAddColorClick={handleAddColorClick}
           onExitAddingSwatchesMode={handleExitAddingSwatchesMode}
+          isTemplateDrawMode={regionStrategy === 'template_match' && awaitingTemplateBox}
+          onTemplateBoxDrawn={handleTemplateBoxDrawn}
+          onTemplateDrawPhaseChange={setTemplateDrawPhase}
           regions={regions}
           paletteRegion={selectedMeta?.paletteRegion}
           regionLabels={
