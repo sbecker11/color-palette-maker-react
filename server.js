@@ -12,6 +12,7 @@ const sharp = require('sharp');
 // Import modularized handlers
 const metadataHandler = require('./metadata_handler');
 const imageProcessor = require('./image_processor');
+const { computeSwatchLabels } = require('./shared/swatchLabels.cjs');
 
 const app = express();
 const port = parseInt(process.env.PORT, 10) || 3000;
@@ -24,21 +25,6 @@ function getPaletteRegion(meta) {
     if (Array.isArray(meta?.paletteRegion)) return meta.paletteRegion;
     if (Array.isArray(meta?.clusterMarkers)) return meta.clusterMarkers;
     return [];
-}
-
-/** Computes swatch labels (A, B, C, ..., Z, AA, ...) for a palette. */
-function computeSwatchLabels(palette) {
-    if (!Array.isArray(palette)) return [];
-    return palette.map((_, i) => {
-        let s = '';
-        let n = i + 1;
-        while (n > 0) {
-            const r = (n - 1) % 26;
-            s = String.fromCharCode(65 + r) + s;
-            n = Math.floor((n - 1) / 26);
-        }
-        return s;
-    });
 }
 
 // --- Configuration ---
