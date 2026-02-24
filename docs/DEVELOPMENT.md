@@ -146,6 +146,14 @@ The server serves the React app from `client/dist` and the API at the same origi
 
 The Dockerfile includes Node.js, Python, and OpenCV so region detection works out of the box.
 
+### Docker Compose (local testing)
+
+```bash
+docker compose up --build
+```
+
+Then open http://localhost:3000. Uploads and metadata are persisted in `./docker-data/` on the host.
+
 ### Local development
 
 ```bash
@@ -177,6 +185,8 @@ docker run -d -p 3000:3000 \
 ```
 
 Metadata is stored in `image_metadata.jsonl` inside the container; back it up or use a volume if you need persistence across image updates.
+
+For deploying on a VPS (Ubuntu/Debian, DigitalOcean, Linode, etc.), see [VPS Hosting](VPS-HOSTING.md).
 
 ---
 

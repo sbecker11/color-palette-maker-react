@@ -1,0 +1,17 @@
+# Color Palette Maker — run locally with Docker Compose
+# Usage: docker compose up --build
+# Then open http://localhost:3000
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DETECT_REGIONS_PYTHON=python3
+    volumes:
+      # Persist uploads and metadata across restarts
+      - ./docker-data/uploads:/app/uploads
+      - ./docker-data/image_metadata.jsonl:/app/image_metadata.jsonl

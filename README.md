@@ -42,6 +42,7 @@ pip install -r requirements.txt
 | [API Reference](docs/API.md) | REST endpoints, request/response formats |
 | [Architecture](docs/ARCHITECTURE.md) | Region & palette pipeline, data flow, storage format |
 | [Development](docs/DEVELOPMENT.md) | Setup, build, test, Docker, project structure, contributing |
+| [VPS Hosting](docs/VPS-HOSTING.md) | Deploy on a VPS (Ubuntu/Debian, Docker, firewall, reverse proxy) |
 | [Future Work](docs/FUTURE-WORK.md) | Improvement backlog, SPA/SaaS migration outlines |
 | [Single-User SPA → Docker Compose](docs/Single-User-SPA-DockerCompose-migration.md) | Multi-service orchestration outline |
 | [Multi-User SaaS → Kubernetes](docs/Multi-User-SaaS-Kubernetes-migration.md) | Kubernetes migration outline |

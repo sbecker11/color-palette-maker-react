@@ -10,6 +10,7 @@ client/coverage-reports/
 # Runtime / generated data
 image_metadata.jsonl
 uploads/
+docker-data/
 .env
 
 # image assets hosted via gh-pages branch
