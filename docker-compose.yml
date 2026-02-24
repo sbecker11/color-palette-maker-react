@@ -1,5 +1,6 @@
 # Color Palette Maker — run locally with Docker Compose
-# Usage: docker compose up --build
+# Usage: mkdir -p docker-data && touch docker-data/image_metadata.jsonl
+#        docker compose up --build
 # Then open http://localhost:3000
 
 services:

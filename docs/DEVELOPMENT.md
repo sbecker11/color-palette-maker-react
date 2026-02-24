@@ -149,6 +149,7 @@ The Dockerfile includes Node.js, Python, and OpenCV so region detection works ou
 ### Docker Compose (local testing)
 
 ```bash
+mkdir -p docker-data && touch docker-data/image_metadata.jsonl
 docker compose up --build
 ```
 

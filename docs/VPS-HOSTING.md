@@ -107,6 +107,15 @@ Replace `YOUR_ORG` and the repo name with your actual values.
 
 ## 4. Run with Docker Compose
 
+Ensure the metadata file exists on the host (Docker creates it as a directory if missing). Run once before first `docker compose up`:
+
+```bash
+mkdir -p docker-data
+touch docker-data/image_metadata.jsonl
+```
+
+Then start the app:
+
 ```bash
 docker compose up -d --build
 ```

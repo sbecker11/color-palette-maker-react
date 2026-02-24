@@ -1,10 +1,13 @@
 # Color Palette Maker — Node + Python (OpenCV required for region detection)
 FROM node:20-slim
 
-# Install Python and OpenCV (required for region detection)
+# Install Python and OpenCV runtime deps (required for region detection)
+# libgl1, libglib2.0 needed for cv2 import in slim images
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
+    libgl1 \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -17,8 +20,11 @@ COPY client/package.json client/package-lock.json* client/
 RUN npm install && cd client && npm install && cd ..
 
 # Install Python deps (required for region detection). --break-system-packages needed for PEP 668 on Debian Bookworm.
+# Symlink python/pip for tools that expect those names
 COPY requirements.txt ./
-RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
+RUN ln -sf /usr/bin/python3 /usr/bin/python 2>/dev/null || true \
+    && ln -sf /usr/bin/pip3 /usr/bin/pip 2>/dev/null || true \
+    && pip3 install --no-cache-dir --break-system-packages -r requirements.txt
 
 # Copy app source
 COPY . .
